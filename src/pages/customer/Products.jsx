@@ -23,7 +23,7 @@ const Products = () => {
 
     const fetchCategories = async () => {
         try {
-            const response = await CategoryApiRequest.getAllCategories();
+            const response = await CategoryApiRequest.getAllParentCategories();
             setCategories(response.data.$values);
         } catch (error) {
             console.error("Error fetching categories:", error);

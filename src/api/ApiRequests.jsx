@@ -1,5 +1,6 @@
 import VerifyPayment from '../pages/customer/VerifyPayment';
 import apiInstance from './ApiInstance';
+import shapeGenerateApiInstance from './ShapeGenerateApiInstance';
 
 // Auth endpoints
 export const authApiRequest = {
@@ -115,6 +116,7 @@ export const AttributeApiRequest = {
 
 export const CategoryApiRequest = {
   getAllCategories: () => apiInstance.get('/Category'),
+  getAllParentCategories: () => apiInstance.get('/Category/parent-categories'),
   getBySlug: (slug) => apiInstance.get(`/Category/get-by-slug/${slug}`),
   getAllWithParentAndAttributes: () => apiInstance.get('/Category/with-parent-and-attributes'),
   getAllWithAttributesAndAttributeValues: () => apiInstance.get('/Category/with-attributes-and-attribute-values'),
@@ -125,6 +127,11 @@ export const CategoryApiRequest = {
 
 export const UploadApiRequest = {
   uploadImage: (data) => apiInstance.post('/FirebaseStorage/upload-image', data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  uploadModel: (data) => apiInstance.post('/FirebaseStorage/upload-model', data, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -182,4 +189,12 @@ export const reviewApiRequest = {
   createReview: (data) => apiInstance.post('/Review', data),
   updateReview: (id, data) => apiInstance.put(`/Review/${id}`, data),
   deleteReview: (id) => apiInstance.delete(`/Review/${id}`),
+};
+
+export const shapeGenerateApiRequest = {
+  generateShape: (data) => shapeGenerateApiInstance.post('/generate_shape', data),
+  downloadGLB: (file_path) => shapeGenerateApiInstance.get(`/download_glb?shape_url=${encodeURIComponent(file_path)}`),
+  proxyFirebaseModel: (url) => shapeGenerateApiInstance.get(`/proxy-model?url=${encodeURIComponent(url)}`, {
+    responseType: 'blob'
+  })
 };

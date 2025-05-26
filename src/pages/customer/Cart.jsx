@@ -4,7 +4,6 @@ import { DeleteOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import { URLS } from '../../constants/urls';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCart, updateQuantity } from '../../store/actions/CartAction';
-import { remove } from 'three/examples/jsm/libs/tween.module.js';
 import { useNavigate } from 'react-router-dom';
 const { TextArea } = Input;
 
@@ -23,12 +22,13 @@ const Cart = () => {
         }
     }
     
-    const renderVariantAttributes = (item) => {
-        if (!item.item.variantAttributes?.$values?.length) return null;
+    const renderVariantAttributes = (record) => {
+        const variantAttributes = record.item?.selectedVariant?.variantAttributes?.$values;
+        if (!variantAttributes || variantAttributes.length === 0) return null;
         
         return (
             <Flex gap={8} wrap="wrap">
-                {item.item.variantAttributes.$values.map((attr, index, array) => {
+                {variantAttributes.map((attr, index, array) => {
                     const value = attr.attributeValue.value;
                     const isLastItem = index === array.length - 1;
                     
@@ -87,7 +87,7 @@ const Cart = () => {
             dataIndex: ['item', 'price'],
             key: 'price',
             render: (text, record) => {
-                const price = record.item.product.price + record.item.priceAdjustment;
+                const price = record.item.product.price + record.item.selectedVariant.priceAdjustment;
                 return <Typography.Text strong>{formatPrice(price)}₫</Typography.Text>;
             },
             responsive: ['sm', 'md', 'lg', 'xl']
@@ -108,11 +108,11 @@ const Cart = () => {
                         min={1}
                         max={record.item.stock}
                         style={{width: 60}}
-                        onChange={(value) => handleQuantityChange(record.item.id, value)}
+                        onChange={(value) => handleQuantityChange(record.item, value)}
                     />
                     <Button 
                         icon={<PlusOutlined />} 
-                        onClick={() => handleQuantityChange(record.item.id, quantity + 1)}
+                        onClick={() => handleQuantityChange(record.item, quantity + 1)}
                         disabled={quantity >= record.item.stock}
                     />
                 </Flex>
@@ -124,8 +124,9 @@ const Cart = () => {
             dataIndex: 'total',
             key: 'total',
             render: (text, record) => {
-                const unitPrice = record.item.product.price + record.item.priceAdjustment;
+                const unitPrice = record.item.product.price + record.item.selectedVariant.priceAdjustment;
                 const total = unitPrice * record.quantity;
+                console.log(record)
                 return <Typography.Text strong>{formatPrice(total)}₫</Typography.Text>;
             },
             responsive: ['sm', 'md', 'lg', 'xl']
@@ -137,7 +138,7 @@ const Cart = () => {
                 <Button 
                     danger
                     icon={<DeleteOutlined />} 
-                    onClick={() => handleRemoveItem(record.item.id)}
+                    onClick={() => handleRemoveItem(record.item.selectedVariant.id)}
                 />
             ),
             responsive: ['xs', 'sm', 'md', 'lg', 'xl']
@@ -146,17 +147,21 @@ const Cart = () => {
 
     const handleQuantityChange = (item, value) => {
         if (value && value > 0) {
-            dispatch(updateQuantity({ item, quantity: value }));
+            console.log(item)
+            dispatch(updateQuantity({ 
+                item: item, 
+                quantity: value 
+            }));
         }
     };
 
     const handleRemoveItem = (id) => {
-        dispatch(removeFromCart(id));
+        dispatch(removeFromCart({ id }));
     };
 
     const calculateTotal = () => {
         return cartItems.reduce((total, item) => {
-            const unitPrice = item.item.product.price + item.item.priceAdjustment;
+            const unitPrice = item.item.product.price + item.item.selectedVariant.priceAdjustment;
             return total + (unitPrice * item.quantity);
         }, 0);
     };

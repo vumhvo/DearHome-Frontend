@@ -1,4 +1,4 @@
-import { DashboardOutlined, ShoppingOutlined, ShoppingCartOutlined, UserOutlined, StockOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { DashboardOutlined, ShoppingOutlined, ShoppingCartOutlined, UserOutlined, StockOutlined, AppstoreOutlined, CloudOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { Menu } from 'antd';
 
@@ -59,6 +59,12 @@ const AdminMenu = () => {
             icon: <UserOutlined />,
             label: 'Customers',
             onClick: () => navigate('/admin/customers'),
+        },
+        {
+            key: 'test-cors',
+            icon: <CloudOutlined />,
+            label: 'Test CORS',
+            onClick: () => navigate('/admin/test-cors'),
         },
         {
             key: 'promotions',

@@ -2,6 +2,7 @@ import React, { Suspense, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { Box } from '@react-three/drei';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const LoadingBox = () => (
   <Box args={[1, 1, 1]}>
@@ -11,7 +12,34 @@ const LoadingBox = () => (
 
 const Model = ({ url, onLoad, onError }) => {
   try {
-    const { scene } = useGLTF(url, true);
+    // Early check for valid URL
+    if (!url) {
+      console.error('Invalid model URL: URL is undefined or empty');
+      if (onError) onError(new Error('Invalid model URL: URL is undefined or empty'));
+      return <LoadingBox />;
+    }
+
+    const scene = new THREE.Scene();
+    const loader = new GLTFLoader();
+
+    // Ensure URL is a string and process it if needed
+    const processedUrl = typeof url === 'string' ? url : String(url);
+    
+    console.log('Loading model from URL:', processedUrl);
+    
+    loader.load(processedUrl, (gltf) => {
+      console.log('Model loaded successfully:', gltf);
+      scene.add(gltf.scene);
+    }, 
+    // Progress callback
+    (xhr) => {
+      console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    }, 
+    // Error callback
+    (error) => {
+      console.error('Error loading model:', error);
+      if (onError) onError(error);
+    });
     
     useEffect(() => {
       if (scene) {
@@ -81,6 +109,8 @@ const Model = ({ url, onLoad, onError }) => {
 };
 
 const ModelLoader = ({ url, onLoad, onError }) => {
+  console.log('ModelLoader received URL:', url);
+  
   return (
     <Suspense fallback={<LoadingBox />}>
       <Model url={url} onLoad={onLoad} onError={onError} />

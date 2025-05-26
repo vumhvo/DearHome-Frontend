@@ -25,6 +25,7 @@ import UserProfile from './pages/personalization/UserProfile';
 import VerifyPayment from './pages/customer/VerifyPayment';
 import OrderTracking from './pages/customer/OrderTracking';
 import ReviewOrder from './pages/customer/ReviewOrder';
+import TestCors from './pages/admin/TestCors';
 
 const AppRouter = () => {
   return (
@@ -70,6 +71,7 @@ const AppRouter = () => {
             <Route path='promotions' >
               <Route index element={<Promotions />} />
             </Route>
+            <Route path='test-cors' element={<TestCors />} />
             <Route path={URLS.ADMIN.PROFILE} element={<UserProfile />} />
         </Route>
       </Routes>

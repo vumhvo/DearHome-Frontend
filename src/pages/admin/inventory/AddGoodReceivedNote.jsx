@@ -162,7 +162,7 @@ const AddGoodReceivedNote = () => {
                 <InputNumber
                     min={0}
                     step={0.01}
-                    prefix="$"
+                    suffix="VND"
                     value={record.unitCost}
                     onChange={(value) => updateItem(record.key, 'unitCost', value)}
                     style={{ width: '100%' }}
@@ -173,7 +173,7 @@ const AddGoodReceivedNote = () => {
             title: 'Total Cost',
             dataIndex: 'totalCost',
             key: 'totalCost',
-            render: (text) => `$${(text || 0).toFixed(2)}`,
+            render: (text) => `${(text || 0).toFixed(2)} VND`,
         },
         {
             title: 'Actions',
@@ -276,7 +276,7 @@ const AddGoodReceivedNote = () => {
                                         <strong>Total:</strong>
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell index={1}>
-                                        <strong>${calculateTotalCost().toFixed(2)}</strong>
+                                        <strong>{calculateTotalCost().toFixed(2)} VND</strong>
                                     </Table.Summary.Cell>
                                     <Table.Summary.Cell index={2} />
                                 </Table.Summary.Row>

@@ -73,7 +73,31 @@ const EditProduct = () => {
         try {
             const response = await CategoryApiRequest.getAllCategories();
             const categoriesData = response.data.$values || [];
-            setCategories(categoriesData);
+            
+            // Process categories to handle parent-child relationships
+            const processedCategories = [];
+            
+            // Add parent categories and their subcategories
+            categoriesData.forEach(category => {
+                // Skip categories that are already added as subcategories (using $ref in the API response)
+                if (category.$ref) return;
+                
+                // Add parent category
+                processedCategories.push(category);
+                
+                // Add subcategories if they exist
+                if (category.subCategories && category.subCategories.$values && category.subCategories.$values.length > 0) {
+                    category.subCategories.$values.forEach(subCategory => {
+                        // Add subcategory with modified name to show hierarchy
+                        processedCategories.push({
+                            ...subCategory,
+                            displayName: `── ${subCategory.name}` // Add indentation to show it's a subcategory
+                        });
+                    });
+                }
+            });
+            
+            setCategories(processedCategories);
         } catch (error) {
             message.error('Failed to fetch categories');
             console.error(error);

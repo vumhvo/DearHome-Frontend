@@ -71,12 +71,13 @@ const ProductVariants = ({ productId, attributes }) => {
         form.setFieldsValue(formValues);
         
         // Set file list for images
-        if (variant.imageUrls && variant.imageUrls.length > 0) {
-            setFileList(variant.imageUrls.map((url, index) => ({
+        if (variant.imageUrls && variant.imageUrls.$values && variant.imageUrls.$values.length > 0) {
+            setFileList(variant.imageUrls.$values.map((url, index) => ({
                 uid: `-${index}`,
                 name: `variant-image-${index}.jpg`,
                 status: 'done',
                 url: url,
+                isExisting: true, // Mark as existing image
             })));
         } else {
             setFileList([]);
@@ -109,17 +110,24 @@ const ProductVariants = ({ productId, attributes }) => {
             const values = await form.validateFields();
             setLoading(true);
             
-            // Upload images if any
+            // Handle images - preserve existing ones and upload new ones
             let imageUrls = [];
             for (const file of fileList) {
                 if (file.originFileObj) {
+                    // This is a new image, upload it
                     const formData = new FormData();
                     formData.append('file', file.originFileObj);
                     const uploadResponse = await UploadApiRequest.uploadImage(formData);
                     imageUrls.push(uploadResponse.data);
-                } else if (file.url) {
+                } else if (file.url && (file.isExisting || !file.originFileObj)) {
+                    // This is an existing image or one that was already uploaded
                     imageUrls.push(file.url);
                 }
+            }
+            
+            // If editing and no new images uploaded, keep the original images
+            if (editingVariant && imageUrls.length === 0 && editingVariant.imageUrls && editingVariant.imageUrls.$values) {
+                imageUrls = editingVariant.imageUrls.$values;
             }
             
             // Prepare variant attributes

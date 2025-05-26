@@ -10,7 +10,11 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cors-proxy": "node cors-proxy-server.js",
+    "model-server": "node model-server.js",
+    "download-model": "node download-models.js",
+    "dev-all": "concurrently \"npm run dev\" \"npm run cors-proxy\" \"npm run model-server\""
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.1",
@@ -19,6 +23,8 @@
     "@reduxjs/toolkit": "^2.7.0",
     "antd": "^5.24.6",
     "axios": "^1.9.0",
+    "file-saver": "^2.0.5",
+    "firebase": "^11.8.1",
     "moment": "^2.30.1",
     "payos-checkout": "^1.0.9",
     "react": "^19.0.0",
@@ -34,11 +40,15 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react-swc": "^3.8.0",
+    "concurrently": "^9.1.2",
+    "cors": "^2.8.5",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
+    "express": "^5.1.0",
     "gh-pages": "^6.3.0",
     "globals": "^15.15.0",
+    "http-proxy-middleware": "^3.0.5",
     "vite": "^6.2.0"
   }
 }

@@ -59,7 +59,7 @@ const InteriorDesign = () => {
                   depth: 8
                 }}
               />
-              <ObjToPremitive url="/public/models/tmpzcupjnp4.obj" />
+              <ObjToPremitive url="https://firebasestorage.googleapis.com/v0/b/makemyhome-27df4.appspot.com/o/3DModels%2Fwhite_mesh%20(1).glb?alt=media&token=67ea418f-2d86-446c-a531-579f6d604f55" />
             </ThreeDScene>
           </div> 
           <Controls />

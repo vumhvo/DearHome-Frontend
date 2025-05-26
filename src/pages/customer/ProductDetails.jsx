@@ -29,8 +29,11 @@ const ProductDetails = () => {
     const [pageSize, setPageSize] = useState(10);
     const [reviewsLoading, setReviewsLoading] = useState(false);
 
-    const itemInCart = useSelector(state => state.cart.items.filter(item => item.item.id === selectedVariant?.id ));
+    const itemInCart = useSelector(state => state.cart.items.filter(item => item.item.selectedVariant?.id === selectedVariant?.id ));
+
+    const cartItems = useSelector(state => state.cart.items);
     var quantityInCart = itemInCart.length > 0 ? itemInCart[0].quantity : 0;
+    console.log('quantityInCart', quantityInCart);
 
     const fetchProduct = async () => {
         try {
@@ -118,22 +121,41 @@ const ProductDetails = () => {
     }
 
     const handleAddToCart = () => {
-        if (quantityInCart.length > 0) {
-            dispatch(updateQuantity({ item: selectedVariant, quantity: quantityInCart + 1 }));
-        } else {
-            
-            dispatch(addToCart({ item: {
-                ...selectedVariant,
-                product: product,
-            }, quantity: 1 }));
+        if (quantityInCart > 0) {
+            // Update existing cart item
+            dispatch(updateQuantity({
+                item: {
+                    selectedVariant: selectedVariant
+                },
+                quantity: quantityInCart + 1
+            }));
+        } else {            
+            // Add new item to cart with proper structure
+            dispatch(addToCart({
+                item: {
+                    selectedVariant,
+                    product: product,
+                }, 
+                quantity: 1,
+                price: calculatePrice()
+            }));
         }
     };
 
     const handleQuantityChange = (value) => {
         if (value > 0) {
-            dispatch(updateQuantity({ item: selectedVariant, quantity: value }));
+            // Update quantity with proper structure
+            dispatch(updateQuantity({
+                item: {
+                    selectedVariant: selectedVariant
+                },
+                quantity: value
+            }));
         } else {
-            dispatch(removeFromCart({ item: selectedVariant }));
+            // Remove item from cart with proper ID
+            dispatch(removeFromCart({
+                id: selectedVariant.id
+            }));
         }
     };
 
@@ -406,7 +428,9 @@ const ProductDetails = () => {
                             }
 
                             <Flex gap={8} align="start">
-                                <Button
+                                {
+                                    quantityInCart === 0 && (
+                                        <Button
                                     style={{ padding: '0px 40px' }}
                                     type="primary"
                                     icon={<ShoppingCartOutlined />}
@@ -415,7 +439,9 @@ const ProductDetails = () => {
                                     disabled={!selectedVariant || selectedVariant.stock <= 0}
                                 >
                                     Add to Cart
-                                </Button>
+                                </Button>)
+                                }
+                                
                                 <Button
                                     icon={isFavorite ? <HeartFilled /> : <HeartOutlined />}
                                     size="large"

@@ -1,0 +1,16 @@
+{
+  "projects": {
+    "default": "makemyhome-27df4",
+    "staging": "makemyhome-27df4"
+  },
+  "targets": {
+    "makemyhome-27df4": {
+      "storage": {
+        "default": [
+          "makemyhome-27df4.appspot.com"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

@@ -146,11 +146,11 @@ const Checkout = () => {
     }, [address]);
 
     const calculateSubtotal = () => {
-        return cartItems.reduce((total, item) => total + ((item.item.product.price + item.item.priceAdjustment) * item.quantity), 0);
+        return cartItems.reduce((total, item) => total + ((item.item.product.price + item.item.selectedVariant.priceAdjustment) * item.quantity), 0);
     };
 
     const calculateTotal = () => {
-        return calculateSubtotal() - calculateDiscount();
+        return calculateSubtotal() - calculateDiscount() + (shippingMethod ? shippingMethod.total_fee : 0);
     };
 
     const handleApplyPromotion = async () => {
@@ -182,10 +182,12 @@ const Checkout = () => {
             shippingRate: shippingMethod.id,
             promotionId: selectedPromotion?.id,
             orderDetails: cartItems.map(item => ({
-                variantId: item.item.id,
+                variantId: item.item.selectedVariant.id,
                 quantity: item.quantity
             }))
         };
+
+        console.log('Order Data:', orderData);
 
         await orderApiRequest.createOrder(orderData, URLS.APP_URL)
             .then(response => {
@@ -413,12 +415,12 @@ const Checkout = () => {
                             <Card title="Order Summary">
                                 <Flex vertical gap={16}>
                                     {cartItems.map(item => {
-                                        const price = item.item.product.price + item.item.priceAdjustment;
+                                        const price = item.item.product.price + item.item.selectedVariant.priceAdjustment;
 
                                         return (
                                             <Flex key={item.id} justify="space-between">
                                                 <Flex gap={8} align="center">
-                                                    <Avatar src={item.item.imageUrls.$values[0]} size={60} shape="square" />
+                                                    <Avatar src={item.item.selectedVariant.imageUrls.$values[0]} size={60} shape="square" />
                                                     <Flex vertical gap={4}>
                                                         <Typography.Text>{item.item.product.name}</Typography.Text>
                                                         <Typography.Text type="secondary">Quantity: {item.quantity}</Typography.Text>
@@ -454,7 +456,7 @@ const Checkout = () => {
                                     <Flex justify="space-between">
                                         <Typography.Text>Shipping</Typography.Text>
                                         <Typography.Text strong>
-                                            {(calculateSubtotal()).toLocaleString('vi-VN')}₫
+                                            {shippingMethod ? shippingMethod.total_fee.toLocaleString('vi-VN') : 0}₫
                                         </Typography.Text>
                                     </Flex>
                                     <Flex justify="space-between">

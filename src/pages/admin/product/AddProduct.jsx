@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Select, Button, Switch, Upload, App } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
-import { CategoryApiRequest, PlacementApiRequest, AttributeApiRequest, UploadApiRequest, ProductApiRequest } from '../../../api/ApiRequests';
+import { Modal, Form, Input, InputNumber, Select, Button, Switch, Upload, App, Radio } from 'antd';
+import { UploadOutlined, LinkOutlined } from '@ant-design/icons';
+import { CategoryApiRequest, PlacementApiRequest, AttributeApiRequest, UploadApiRequest, ProductApiRequest, shapeGenerateApiRequest } from '../../../api/ApiRequests';
+import ModelPreview from '../../../components/ModelPreview';
+import ErrorBoundary from '../../../components/ErrorBoundary';
 
 const { Option } = Select;
 
@@ -13,6 +15,10 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
     const [attributes, setAttributes] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [fileList, setFileList] = useState([]);
+    const [modelFileList, setModelFileList] = useState([]);
+    const [modelPreviewUrl, setModelPreviewUrl] = useState(null);
+    const [modelSource, setModelSource] = useState('local'); // 'local' or 'firebase'
+    const [firebaseUrl, setFirebaseUrl] = useState('');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -55,7 +61,7 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
         try {
             setLoading(true);
             const values = await form.validateFields();
-            
+
             let imageUrl = '';
             if (fileList.length > 0) {
                 const formData = new FormData();
@@ -64,11 +70,23 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                 imageUrl = uploadResponse.data;
             }
 
+            // Upload 3D model if provided
+            let modelUrl = '';
+            if (modelSource === 'local' && modelFileList.length > 0) {
+                const modelFormData = new FormData();
+                modelFormData.append('file', modelFileList[0].originFileObj);
+                const modelUploadResponse = await UploadApiRequest.uploadModel(modelFormData);
+                modelUrl = modelUploadResponse.data;
+            } else if (modelSource === 'firebase' && firebaseUrl) {
+                // Use the Firebase URL directly
+                modelUrl = firebaseUrl;
+            }
+
             // Prepare attribute values
             const attributeValues = [];
             if (selectedCategory) {
                 const categoryAttributes = categories.find(c => c.id === selectedCategory)?.attributes?.$values || [];
-                
+
                 categoryAttributes.forEach(attr => {
                     const value = values[`attribute_${attr.id}`];
                     if (value) {
@@ -82,6 +100,7 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
 
             const productData = {
                 imageUrl,
+                modelUrl,  // Add modelUrl to the product data
                 name: values.name,
                 price: values.price,
                 description: values.description,
@@ -98,6 +117,14 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                     onSubmit(productData);
                     form.resetFields();
                     setFileList([]);
+                    setModelFileList([]);
+                    if (modelPreviewUrl) {
+                        // Only revoke object URLs, not Firebase URLs
+                        if (modelPreviewUrl.startsWith('blob:')) {
+                            URL.revokeObjectURL(modelPreviewUrl);
+                        }
+                        setModelPreviewUrl(null);
+                    }
                     setSelectedCategory(null);
                 },
                 (error) => {
@@ -119,6 +146,59 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
 
     const handleFileChange = ({ fileList }) => {
         setFileList(fileList);
+    };
+
+    const handleModelFileChange = ({ fileList }) => {
+        setModelFileList(fileList);
+        if (fileList.length > 0 && fileList[0].originFileObj) {
+            // Create a URL for the uploaded file
+            const url = URL.createObjectURL(fileList[0].originFileObj);
+            setModelPreviewUrl(url);
+        } else {
+            setModelPreviewUrl(null);
+        }
+    };
+
+    // Handle a Firebase URL directly
+    const handleLoadFirebaseModel = async () => {
+        try {
+            setLoading(true);
+            if (!firebaseUrl) {
+                message.error('Please enter a valid Firebase model URL');
+                return;
+            }
+            
+            // Set the model preview URL directly
+            setModelPreviewUrl(firebaseUrl);
+            
+            // Store the valid URL in the form
+            form.setFieldsValue({ modelUrl: firebaseUrl });
+            
+            message.success('3D model URL loaded successfully');
+            
+        } catch (error) {
+            console.error('Error setting Firebase model URL:', error);
+            message.error('Failed to set 3D model URL: ' + (error.message || 'Unknown error'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleModelSourceChange = (e) => {
+        const newSource = e.target.value;
+        setModelSource(newSource);
+        
+        // Clear existing model data when switching sources
+        if (newSource === 'local') {
+            setFirebaseUrl('');
+        } else {
+            setModelFileList([]);
+        }
+        
+        if (modelPreviewUrl && modelPreviewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(modelPreviewUrl);
+        }
+        setModelPreviewUrl(null);
     };
 
     const getCategoryAttributes = () => {
@@ -155,12 +235,64 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                         fileList={fileList}
                         beforeUpload={() => false}
                         onChange={handleFileChange}
-                        
+
                     >
                         <UploadOutlined />
                     </Upload>
                 </Form.Item>
-                
+                <Form.Item
+                    name="3dModel"
+                    label="3D Model (Optional)"
+                    rules={[{ required: false }]}
+                >
+                    <div>
+                        <Radio.Group 
+                            value={modelSource} 
+                            onChange={handleModelSourceChange}
+                            style={{ marginBottom: 16 }}
+                        >
+                            <Radio.Button value="local">Upload Model</Radio.Button>
+                            <Radio.Button value="firebase">Firebase URL</Radio.Button>
+                        </Radio.Group>
+                        
+                        {modelSource === 'local' ? (
+                            <Upload
+                                listType="text"
+                                maxCount={1}
+                                fileList={modelFileList}
+                                beforeUpload={() => false}
+                                onChange={handleModelFileChange}
+                                accept=".glb,.gltf"
+                            >
+                                <Button icon={<UploadOutlined />}>Select 3D Model File</Button>
+                            </Upload>
+                        ) : (
+                            <div>
+                                <Input
+                                    placeholder="Enter Firebase GLB model URL"
+                                    value={firebaseUrl}
+                                    onChange={(e) => setFirebaseUrl(e.target.value)}
+                                    style={{ width: '100%', marginBottom: 8 }}
+                                    prefix={<LinkOutlined />}
+                                />
+                                <Button 
+                                    type="primary" 
+                                    onClick={handleLoadFirebaseModel}
+                                    disabled={!firebaseUrl}
+                                >
+                                    Load Firebase Model
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {modelPreviewUrl && (
+                        <div style={{ marginTop: 16, height: 300, border: '1px solid #d9d9d9', borderRadius: 2 }}>
+                            <ModelPreview modelPath={modelPreviewUrl} />
+                        </div>
+                    )}
+                </Form.Item>
+
                 <Form.Item
                     name="name"
                     label="Product Name"
@@ -196,7 +328,7 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                     label="Category"
                     rules={[{ required: true, message: 'Please select category!' }]}
                 >
-                    <Select 
+                    <Select
                         placeholder="Select category"
                         onChange={handleCategoryChange}
                     >
@@ -231,7 +363,7 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                         <div style={{ marginBottom: 16 }}>
                             <h3>Attributes</h3>
                         </div>
-                        {getCategoryAttributes().map(attribuste => (
+                        {getCategoryAttributes().map(attribute => (
                             <Form.Item
                                 key={attribute.id}
                                 name={`attribute_${attribute.id}`}

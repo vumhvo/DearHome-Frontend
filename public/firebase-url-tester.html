@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Storage URL Tester</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    .success { color: green; }
+    .error { color: red; }
+    button { margin: 10px 0; }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Firebase Storage URL Tester</h1>
+  <p>This tool tests Firebase Storage URLs to diagnose CORS and content issues</p>
+  
+  <div>
+    <label for="urlInput">Firebase Storage URL to test:</label>
+    <input type="text" id="urlInput" placeholder="Enter Firebase Storage URL" 
+      value="https://firebasestorage.googleapis.com/v0/b/makemyhome-27df4.appspot.com/o/3DModels%2Fwhite_mesh%20(1).glb?alt=media&token=67ea418f-2d86-446c-a531-579f6d604f55">
+    <button id="testBtn">Test URL</button>
+    <button id="addAltMediaBtn">Add alt=media parameter</button>
+  </div>
+  
+  <h2>Results:</h2>
+  <div id="results">
+    <p>Click "Test URL" to start testing</p>
+  </div>
+  
+  <script>
+    document.getElementById('testBtn').addEventListener('click', testUrl);
+    document.getElementById('addAltMediaBtn').addEventListener('click', addAltMedia);
+    
+    function addAltMedia() {
+      const urlInput = document.getElementById('urlInput');
+      const url = urlInput.value;
+      
+      if (url.includes('firebasestorage.googleapis.com') && !url.includes('alt=media')) {
+        const separator = url.includes('?') ? '&' : '?';
+        urlInput.value = `${url}${separator}alt=media`;
+      } else {
+        alert('URL already has alt=media parameter or is not a Firebase Storage URL');
+      }
+    }
+    
+    async function testUrl() {
+      const url = document.getElementById('urlInput').value;
+      const results = document.getElementById('results');
+      
+      results.innerHTML = '<p>Testing URL, please wait...</p>';
+      
+      try {
+        // Try fetch with different approaches
+        results.innerHTML += '<h3>Test 1: Simple Fetch</h3>';
+        await testFetch(url);
+        
+        results.innerHTML += '<h3>Test 2: Fetch with Headers</h3>';
+        await testFetchWithHeaders(url);
+        
+        results.innerHTML += '<h3>Test 3: XMLHttpRequest</h3>';
+        await testXhr(url);
+        
+        results.innerHTML += '<h3>Test 4: Image Load Test</h3>';
+        await testImageLoad(url);
+        
+        results.innerHTML += '<h3>Test 5: Create Three.js Object</h3>';
+        await testThreeJsLoad(url);
+        
+      } catch (error) {
+        results.innerHTML += `<p class="error">Error: ${error.message}</p>`;
+      }
+    }
+    
+    async function testFetch(url) {
+      try {
+        const response = await fetch(url);
+        const status = response.status;
+        const contentType = response.headers.get('content-type');
+        
+        if (!response.ok) {
+          results.innerHTML += `<p class="error">Error: HTTP status ${status}</p>`;
+          return;
+        }
+        
+        if (contentType.includes('text/html')) {
+          const text = await response.text();
+          results.innerHTML += `<p class="error">Received HTML instead of binary data</p>`;
+          results.innerHTML += `<pre>${text.substring(0, 200)}...</pre>`;
+        } else {
+          const arrayBuffer = await response.arrayBuffer();
+          results.innerHTML += `<p class="success">Success! Received binary data (${arrayBuffer.byteLength} bytes)</p>`;
+          results.innerHTML += `<p>Content-Type: ${contentType}</p>`;
+        }
+      } catch (error) {
+        results.innerHTML += `<p class="error">Fetch failed: ${error.message}</p>`;
+      }
+    }
+    
+    async function testFetchWithHeaders(url) {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'Accept': '*/*',
+            'Origin': window.location.origin
+          }
+        });
+        
+        const status = response.status;
+        const contentType = response.headers.get('content-type');
+        
+        if (!response.ok) {
+          results.innerHTML += `<p class="error">Error: HTTP status ${status}</p>`;
+          return;
+        }
+        
+        if (contentType.includes('text/html')) {
+          const text = await response.text();
+          results.innerHTML += `<p class="error">Received HTML instead of binary data</p>`;
+          results.innerHTML += `<pre>${text.substring(0, 200)}...</pre>`;
+        } else {
+          const arrayBuffer = await response.arrayBuffer();
+          results.innerHTML += `<p class="success">Success! Received binary data (${arrayBuffer.byteLength} bytes)</p>`;
+          results.innerHTML += `<p>Content-Type: ${contentType}</p>`;
+        }
+      } catch (error) {
+        results.innerHTML += `<p class="error">Fetch with headers failed: ${error.message}</p>`;
+      }
+    }
+    
+    function testXhr(url) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        xhr.responseType = 'arraybuffer';
+        
+        xhr.onload = function() {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const contentType = xhr.getResponseHeader('content-type');
+            
+            if (contentType && contentType.includes('text/html')) {
+              const text = new TextDecoder().decode(xhr.response);
+              results.innerHTML += `<p class="error">Received HTML instead of binary data</p>`;
+              results.innerHTML += `<pre>${text.substring(0, 200)}...</pre>`;
+            } else {
+              results.innerHTML += `<p class="success">Success! Received binary data (${xhr.response.byteLength} bytes)</p>`;
+              results.innerHTML += `<p>Content-Type: ${contentType}</p>`;
+            }
+            resolve();
+          } else {
+            results.innerHTML += `<p class="error">Error: HTTP status ${xhr.status}</p>`;
+            reject(new Error(`HTTP status ${xhr.status}`));
+          }
+        };
+        
+        xhr.onerror = function() {
+          results.innerHTML += `<p class="error">XHR request failed</p>`;
+          reject(new Error('XHR request failed'));
+        };
+        
+        xhr.send();
+      });
+    }
+    
+    function testImageLoad(url) {
+      return new Promise((resolve) => {
+        // Only for image formats
+        if (!url.toLowerCase().endsWith('.jpg') && 
+            !url.toLowerCase().endsWith('.jpeg') && 
+            !url.toLowerCase().endsWith('.png') && 
+            !url.toLowerCase().endsWith('.gif')) {
+          results.innerHTML += `<p>Skipping image load test (not an image URL)</p>`;
+          resolve();
+          return;
+        }
+        
+        const img = new Image();
+        img.onload = function() {
+          results.innerHTML += `<p class="success">Image loaded successfully</p>`;
+          resolve();
+        };
+        
+        img.onerror = function() {
+          results.innerHTML += `<p class="error">Image failed to load</p>`;
+          resolve();
+        };
+        
+        img.src = url;
+      });
+    }
+    
+    function testThreeJsLoad(url) {
+      return new Promise((resolve) => {
+        // Only for 3D model formats
+        if (!url.toLowerCase().endsWith('.glb') && 
+            !url.toLowerCase().endsWith('.gltf') && 
+            !url.toLowerCase().endsWith('.obj')) {
+          results.innerHTML += `<p>Skipping Three.js load test (not a 3D model URL)</p>`;
+          resolve();
+          return;
+        }
+        
+        // Check if we need to load Three.js
+        if (typeof THREE === 'undefined') {
+          results.innerHTML += `<p>Loading Three.js...</p>`;
+          
+          // Load Three.js dynamically
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/three@0.150.0/build/three.min.js';
+          script.onload = function() {
+            // Load GLTFLoader
+            const loaderScript = document.createElement('script');
+            loaderScript.src = 'https://cdn.jsdelivr.net/npm/three@0.150.0/examples/jsm/loaders/GLTFLoader.js';
+            loaderScript.onload = function() {
+              // Now proceed with loading
+              loadWithThreeJs(url).then(resolve);
+            };
+            document.head.appendChild(loaderScript);
+          };
+          script.onerror = function() {
+            results.innerHTML += `<p class="error">Failed to load Three.js</p>`;
+            resolve();
+          };
+          document.head.appendChild(script);
+        } else {
+          // Three.js already loaded
+          loadWithThreeJs(url).then(resolve);
+        }
+      });
+    }
+    
+    async function loadWithThreeJs(url) {
+      try {
+        results.innerHTML += `<p>Attempting to load model with Three.js GLTFLoader...</p>`;
+        
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+          url,
+          (gltf) => {
+            results.innerHTML += `<p class="success">Model loaded successfully with Three.js!</p>`;
+          },
+          (xhr) => {
+            results.innerHTML += `<p>Loading: ${Math.round((xhr.loaded / xhr.total) * 100)}%</p>`;
+          },
+          (error) => {
+            results.innerHTML += `<p class="error">Three.js loading error: ${error.message}</p>`;
+          }
+        );
+      } catch (error) {
+        results.innerHTML += `<p class="error">Three.js exception: ${error.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
