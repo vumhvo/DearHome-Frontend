@@ -4,7 +4,7 @@ import Home from './pages/customer/Home';
 import CustomerLayout from './layouts/customer/CustomerLayout';
 import Products from './pages/customer/Products';
 import CategoryDetails from './pages/customer/CategoryDetails';
-import ProductDetails from './pages/customer/ProductDetails';
+import ProductDetailsWithModelView from './pages/customer/ProductDetailsWithModelView';
 import Cart from './pages/customer/Cart';
 import Checkout from './pages/customer/Checkout';
 import { URLS } from './constants/urls';
@@ -26,6 +26,7 @@ import VerifyPayment from './pages/customer/VerifyPayment';
 import OrderTracking from './pages/customer/OrderTracking';
 import ReviewOrder from './pages/customer/ReviewOrder';
 import TestCors from './pages/admin/TestCors';
+import ProductDetails from './pages/customer/ProductDetails';
 
 const AppRouter = () => {
   return (

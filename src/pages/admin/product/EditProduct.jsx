@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Form, Input, InputNumber, Select, Button, Upload, Breadcrumb, Row, Col, Switch, Card, Flex, Typography, App } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { Form, Input, InputNumber, Select, Button, Upload, Breadcrumb, Row, Col, Switch, Card, Flex, Typography, App, Slider, ColorPicker } from 'antd';
+import { UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ProductApiRequest, CategoryApiRequest, PlacementApiRequest, AttributeApiRequest, UploadApiRequest } from '../../../api/ApiRequests';
+import { ProductApiRequest, CategoryApiRequest, PlacementApiRequest, AttributeApiRequest, UploadApiRequest, shapeGenerateApiRequest } from '../../../api/ApiRequests';
 import ProductVariants from './ProductVariants';
+import ModelPreview from '../../../components/ModelPreview';
+import ErrorBoundary from '../../../components/ErrorBoundary';
 
 const { Option } = Select;
 
@@ -21,6 +23,14 @@ const EditProduct = () => {
     const [fileList, setFileList] = useState([]);
     const [product, setProduct] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [modelPreviewUrl, setModelPreviewUrl] = useState(null);
+    const [modelUrl, setModelUrl] = useState('');
+    const [generating3DModel, setGenerating3DModel] = useState(false);
+    const [modelColor, setModelColor] = useState('#ffffff');
+    const [modelMaterial, setModelMaterial] = useState({ 
+        roughness: 0.5, 
+        metalness: 0.5 
+    });
 
     useEffect(() => {
         fetchProduct();
@@ -46,6 +56,11 @@ const EditProduct = () => {
                     status: 'done',
                     url: product.imageUrl,
                 }]);
+            }
+            
+            if (product.modelUrl) {
+                setModelPreviewUrl(product.modelUrl);
+                setModelUrl(product.modelUrl);
             }
             
             if (product.categoryId) {
@@ -165,6 +180,7 @@ const EditProduct = () => {
             const productData = {
                 id: id,
                 imageUrl,
+                modelUrl: modelUrl, // Include the model URL
                 name: values.name,
                 price: values.basePrice,
                 description: values.description,
@@ -196,6 +212,57 @@ const EditProduct = () => {
 
     const handleCancel = () => {
         navigate('/admin/products');
+    };
+
+    const handleColorChange = (color) => {
+        setModelColor(color);
+    };
+
+    const handleMaterialChange = (property, value) => {
+        setModelMaterial(prev => ({
+            ...prev,
+            [property]: value
+        }));
+    };
+
+    // Generate 3D model from image
+    const handleGenerate3DModel = async () => {
+        // Get the current image URL from the product or fileList
+        const currentImageUrl = fileList.length > 0 && fileList[0].url 
+            ? fileList[0].url 
+            : product?.imageUrl;
+            
+        if (!currentImageUrl) {
+            message.error('Please upload an image first');
+            return;
+        }
+
+        try {
+            setGenerating3DModel(true);
+            message.loading('Generating 3D model from image. This may take a minute...', 0);
+
+            // Call the shape generation API with the image URL
+            const response = await shapeGenerateApiRequest.generateShape({
+                caption: 'shape',
+                image_path: currentImageUrl,
+            });
+
+            if (response.data && response.data.storage_file_path) {
+                // Get the shape URL from the response
+                const shapeUrl = response.data.storage_file_path;
+                setModelUrl(shapeUrl);
+                setModelPreviewUrl(shapeUrl);
+                message.success('3D model generated successfully');
+            } else {
+                throw new Error('Failed to generate 3D model');
+            }
+        } catch (error) {
+            console.error('Error generating 3D model:', error);
+            message.error('Failed to generate 3D model: ' + (error.message || 'Unknown error'));
+        } finally {
+            setGenerating3DModel(false);
+            message.destroy(); // Clear the loading message
+        }
     };
 
     return (
@@ -245,20 +312,59 @@ const EditProduct = () => {
                                     <Button variant="text" icon={<UploadOutlined />}></Button>
                                 </Upload>
                             </Form.Item>
+
+                            {fileList.length > 0 && (
+                                <Form.Item
+                                    name="3dModel"
+                                    label="3D Model"
+                                >
+                                    {modelPreviewUrl ? (
+                                        <div>
+                                            <div style={{ marginBottom: 16 }}>
+                                                <Button 
+                                                    type="primary" 
+                                                    onClick={handleGenerate3DModel}
+                                                    loading={generating3DModel}
+                                                    icon={<CloudUploadOutlined />}
+                                                >
+                                                    Regenerate 3D Model
+                                                </Button>
+                                            </div>
+                                            <div style={{ height: 300, border: '1px solid #d9d9d9', borderRadius: 2, overflow: 'hidden' }}>
+                                                <ErrorBoundary>
+                                                    <ModelPreview 
+                                                        modelPath={modelPreviewUrl} 
+                                                        color={modelColor} 
+                                                        material={modelMaterial} 
+                                                    />
+                                                </ErrorBoundary>
+                                            </div>
+                                            
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <Button 
+                                                type="primary" 
+                                                onClick={handleGenerate3DModel}
+                                                loading={generating3DModel}
+                                                icon={<CloudUploadOutlined />}
+                                            >
+                                                Generate 3D Model from Image
+                                            </Button>
+                                            <p style={{ marginTop: 8, color: 'gray', fontStyle: 'italic' }}>
+                                                Our AI will automatically generate a 3D model based on your product image
+                                            </p>
+                                        </div>
+                                    )}
+                                </Form.Item>
+                            )}
+
                             <Form.Item
                                 name="name"
                                 label="Product Name"
                                 rules={[{ required: true, message: 'Please input product name!' }]}
                             >
                                 <Input placeholder="Enter product name" />
-                            </Form.Item>
-
-                            <Form.Item
-                                name="description"
-                                label="Description"
-                                rules={[{ required: true, message: 'Please input product description!' }]}
-                            >
-                                <Input.TextArea rows={4} placeholder="Enter product description" />
                             </Form.Item>
 
                             <Form.Item
@@ -312,6 +418,14 @@ const EditProduct = () => {
                                         <Option key={placement.id} value={placement.id}>{placement.name}</Option>
                                     ))}
                                 </Select>
+                            </Form.Item>
+
+                            <Form.Item
+                                name="description"
+                                label="Description"
+                                rules={[{ required: true, message: 'Please input product description!' }]}
+                            >
+                                <Input.TextArea rows={4} placeholder="Enter product description" />
                             </Form.Item>
                             
                         </Card>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Select, Button, Switch, Upload, App, Radio } from 'antd';
-import { UploadOutlined, LinkOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, InputNumber, Select, Button, Switch, Upload, App } from 'antd';
+import { UploadOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import { CategoryApiRequest, PlacementApiRequest, AttributeApiRequest, UploadApiRequest, ProductApiRequest, shapeGenerateApiRequest } from '../../../api/ApiRequests';
 import ModelPreview from '../../../components/ModelPreview';
 import ErrorBoundary from '../../../components/ErrorBoundary';
@@ -15,11 +15,11 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
     const [attributes, setAttributes] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [fileList, setFileList] = useState([]);
-    const [modelFileList, setModelFileList] = useState([]);
+    const [uploadedImageUrl, setUploadedImageUrl] = useState('');
     const [modelPreviewUrl, setModelPreviewUrl] = useState(null);
-    const [modelSource, setModelSource] = useState('local'); // 'local' or 'firebase'
-    const [firebaseUrl, setFirebaseUrl] = useState('');
+    const [modelUrl, setModelUrl] = useState('');
     const [loading, setLoading] = useState(false);
+    const [generating3DModel, setGenerating3DModel] = useState(false);
 
     useEffect(() => {
         fetchCategories();
@@ -28,14 +28,39 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
     }, []);
 
     const fetchCategories = async () => {
-        try {
-            const response = await CategoryApiRequest.getAllWithParentAndAttributes();
-            setCategories(response.data.$values || []);
-        } catch (error) {
-            message.error('Failed to fetch categories');
-            console.error(error);
-        }
-    };
+            try {
+                const response = await CategoryApiRequest.getAllCategories();
+                const categoriesData = response.data.$values || [];
+                
+                // Process categories to handle parent-child relationships
+                const processedCategories = [];
+                
+                // Add parent categories and their subcategories
+                categoriesData.forEach(category => {
+                    // Skip categories that are already added as subcategories (using $ref in the API response)
+                    if (category.$ref) return;
+                    
+                    // Add parent category
+                    processedCategories.push(category);
+                    
+                    // Add subcategories if they exist
+                    if (category.subCategories && category.subCategories.$values && category.subCategories.$values.length > 0) {
+                        category.subCategories.$values.forEach(subCategory => {
+                            // Add subcategory with modified name to show hierarchy
+                            processedCategories.push({
+                                ...subCategory,
+                                displayName: `── ${subCategory.name}` // Add indentation to show it's a subcategory
+                            });
+                        });
+                    }
+                });
+                
+                setCategories(processedCategories);
+            } catch (error) {
+                message.error('Failed to fetch categories');
+                console.error(error);
+            }
+        };
 
     const fetchPlacements = async () => {
         try {
@@ -62,24 +87,15 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
             setLoading(true);
             const values = await form.validateFields();
 
-            let imageUrl = '';
-            if (fileList.length > 0) {
+            // Use the already uploaded image URL if available
+            let imageUrl = uploadedImageUrl;
+            
+            // If we don't have an uploaded URL but have a file, try uploading it now (fallback)
+            if (!imageUrl && fileList.length > 0 && fileList[0].originFileObj) {
                 const formData = new FormData();
                 formData.append('file', fileList[0].originFileObj);
                 const uploadResponse = await UploadApiRequest.uploadImage(formData);
                 imageUrl = uploadResponse.data;
-            }
-
-            // Upload 3D model if provided
-            let modelUrl = '';
-            if (modelSource === 'local' && modelFileList.length > 0) {
-                const modelFormData = new FormData();
-                modelFormData.append('file', modelFileList[0].originFileObj);
-                const modelUploadResponse = await UploadApiRequest.uploadModel(modelFormData);
-                modelUrl = modelUploadResponse.data;
-            } else if (modelSource === 'firebase' && firebaseUrl) {
-                // Use the Firebase URL directly
-                modelUrl = firebaseUrl;
             }
 
             // Prepare attribute values
@@ -100,7 +116,7 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
 
             const productData = {
                 imageUrl,
-                modelUrl,  // Add modelUrl to the product data
+                modelUrl: modelUrl, // Use the generated model URL
                 name: values.name,
                 price: values.price,
                 description: values.description,
@@ -117,7 +133,7 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                     onSubmit(productData);
                     form.resetFields();
                     setFileList([]);
-                    setModelFileList([]);
+                    setUploadedImageUrl('');
                     if (modelPreviewUrl) {
                         // Only revoke object URLs, not Firebase URLs
                         if (modelPreviewUrl.startsWith('blob:')) {
@@ -125,6 +141,7 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                         }
                         setModelPreviewUrl(null);
                     }
+                    setModelUrl('');
                     setSelectedCategory(null);
                 },
                 (error) => {
@@ -144,67 +161,85 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
         form.resetFields(['attributeValues']);
     };
 
-    const handleFileChange = ({ fileList }) => {
+    const handleFileChange = async ({ fileList }) => {
         setFileList(fileList);
-    };
-
-    const handleModelFileChange = ({ fileList }) => {
-        setModelFileList(fileList);
+        
+        // If a file was selected, upload it immediately
         if (fileList.length > 0 && fileList[0].originFileObj) {
-            // Create a URL for the uploaded file
-            const url = URL.createObjectURL(fileList[0].originFileObj);
-            setModelPreviewUrl(url);
-        } else {
-            setModelPreviewUrl(null);
-        }
-    };
-
-    // Handle a Firebase URL directly
-    const handleLoadFirebaseModel = async () => {
-        try {
-            setLoading(true);
-            if (!firebaseUrl) {
-                message.error('Please enter a valid Firebase model URL');
-                return;
+            try {
+                setLoading(true);
+                const formData = new FormData();
+                formData.append('file', fileList[0].originFileObj);
+                const uploadResponse = await UploadApiRequest.uploadImage(formData);
+                const imageUrl = uploadResponse.data;
+                
+                setUploadedImageUrl(imageUrl);
+                message.success('Image uploaded successfully');
+                
+                // Update file object with URL info
+                const newFileList = [...fileList];
+                newFileList[0].status = 'done';
+                newFileList[0].url = imageUrl;
+                setFileList(newFileList);
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                message.error('Failed to upload image: ' + (error.message || 'Unknown error'));
+                
+                // Mark file as error
+                const newFileList = [...fileList];
+                newFileList[0].status = 'error';
+                setFileList(newFileList);
+            } finally {
+                setLoading(false);
             }
-            
-            // Set the model preview URL directly
-            setModelPreviewUrl(firebaseUrl);
-            
-            // Store the valid URL in the form
-            form.setFieldsValue({ modelUrl: firebaseUrl });
-            
-            message.success('3D model URL loaded successfully');
-            
-        } catch (error) {
-            console.error('Error setting Firebase model URL:', error);
-            message.error('Failed to set 3D model URL: ' + (error.message || 'Unknown error'));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleModelSourceChange = (e) => {
-        const newSource = e.target.value;
-        setModelSource(newSource);
-        
-        // Clear existing model data when switching sources
-        if (newSource === 'local') {
-            setFirebaseUrl('');
         } else {
-            setModelFileList([]);
+            // If no file is selected, clear the uploaded URL
+            setUploadedImageUrl('');
         }
-        
-        if (modelPreviewUrl && modelPreviewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(modelPreviewUrl);
-        }
-        setModelPreviewUrl(null);
     };
 
     const getCategoryAttributes = () => {
         if (!selectedCategory) return [];
         const category = categories.find(c => c.id === selectedCategory);
         return category?.attributes?.$values || [];
+    };
+
+    // Generate 3D model from image
+    const handleGenerate3DModel = async () => {
+        if (!uploadedImageUrl) {
+            message.error('Please upload an image first');
+            return;
+        }
+
+        try {
+            setGenerating3DModel(true);
+            message.loading('Generating 3D model from image. This may take a minute...', 0);
+
+            // Call the shape generation API with the image URL
+            const response = await shapeGenerateApiRequest.generateShape({
+                caption: 'shape',
+                image_path: uploadedImageUrl,
+            });
+
+            if (response.data && response.data.storage_file_path) {
+                // Get the shape URL from the response
+                const shapeUrl = response.data.storage_file_path;
+                setModelUrl(shapeUrl);
+                setModelPreviewUrl(shapeUrl);
+                message.success('3D model generated successfully');
+                
+                // Update the form values
+                form.setFieldsValue({ modelUrl: shapeUrl });
+            } else {
+                throw new Error('Failed to generate 3D model');
+            }
+        } catch (error) {
+            console.error('Error generating 3D model:', error);
+            message.error('Failed to generate 3D model: ' + (error.message || 'Unknown error'));
+        } finally {
+            setGenerating3DModel(false);
+            message.destroy(); // Clear the loading message
+        }
     };
 
     return (
@@ -227,7 +262,6 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                 <Form.Item
                     name="image"
                     label="Product Image"
-                    rules={[{ required: true, message: 'Please upload product image!' }]}
                 >
                     <Upload
                         listType="picture-card"
@@ -235,63 +269,56 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                         fileList={fileList}
                         beforeUpload={() => false}
                         onChange={handleFileChange}
-
                     >
                         <UploadOutlined />
                     </Upload>
-                </Form.Item>
-                <Form.Item
-                    name="3dModel"
-                    label="3D Model (Optional)"
-                    rules={[{ required: false }]}
-                >
-                    <div>
-                        <Radio.Group 
-                            value={modelSource} 
-                            onChange={handleModelSourceChange}
-                            style={{ marginBottom: 16 }}
-                        >
-                            <Radio.Button value="local">Upload Model</Radio.Button>
-                            <Radio.Button value="firebase">Firebase URL</Radio.Button>
-                        </Radio.Group>
-                        
-                        {modelSource === 'local' ? (
-                            <Upload
-                                listType="text"
-                                maxCount={1}
-                                fileList={modelFileList}
-                                beforeUpload={() => false}
-                                onChange={handleModelFileChange}
-                                accept=".glb,.gltf"
-                            >
-                                <Button icon={<UploadOutlined />}>Select 3D Model File</Button>
-                            </Upload>
-                        ) : (
-                            <div>
-                                <Input
-                                    placeholder="Enter Firebase GLB model URL"
-                                    value={firebaseUrl}
-                                    onChange={(e) => setFirebaseUrl(e.target.value)}
-                                    style={{ width: '100%', marginBottom: 8 }}
-                                    prefix={<LinkOutlined />}
-                                />
-                                <Button 
-                                    type="primary" 
-                                    onClick={handleLoadFirebaseModel}
-                                    disabled={!firebaseUrl}
-                                >
-                                    Load Firebase Model
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {modelPreviewUrl && (
-                        <div style={{ marginTop: 16, height: 300, border: '1px solid #d9d9d9', borderRadius: 2 }}>
-                            <ModelPreview modelPath={modelPreviewUrl} />
+                    {uploadedImageUrl && (
+                        <div style={{ marginTop: 8, color: 'green' }}>
+                            Image uploaded successfully ✓
                         </div>
                     )}
                 </Form.Item>
+
+                {uploadedImageUrl && (
+                    <Form.Item
+                        name="3dModel"
+                        label="3D Model"
+                    >
+                        {modelPreviewUrl ? (
+                            <div>
+                                <div style={{ marginBottom: 16 }}>
+                                    <Button 
+                                        type="primary" 
+                                        onClick={handleGenerate3DModel}
+                                        loading={generating3DModel}
+                                        icon={<CloudUploadOutlined />}
+                                    >
+                                        Regenerate 3D Model
+                                    </Button>
+                                </div>
+                                <div style={{ height: 300, border: '1px solid #d9d9d9', borderRadius: 2, overflow: 'hidden' }}>
+                                    <ErrorBoundary>
+                                        <ModelPreview modelPath={modelPreviewUrl} />
+                                    </ErrorBoundary>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <Button 
+                                    type="primary" 
+                                    onClick={handleGenerate3DModel}
+                                    loading={generating3DModel}
+                                    icon={<CloudUploadOutlined />}
+                                >
+                                    Generate 3D Model from Image
+                                </Button>
+                                <p style={{ marginTop: 8, color: 'gray', fontStyle: 'italic' }}>
+                                    Our AI will automatically generate a 3D model based on your product image
+                                </p>
+                            </div>
+                        )}
+                    </Form.Item>
+                )}
 
                 <Form.Item
                     name="name"
@@ -371,9 +398,9 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                                 rules={[{ required: true, message: `Please select ${attribute.name}!` }]}
                             >
                                 <Select placeholder={`Select ${attribute.name}`}>
-                                    {attribute.values?.$values?.map(value => (
+                                    {(attribute.values?.$values?.map(value => (
                                         <Option key={value} value={value}>{value}</Option>
-                                    )) || []}
+                                    ))) || []}
                                 </Select>
                             </Form.Item>
                         ))}

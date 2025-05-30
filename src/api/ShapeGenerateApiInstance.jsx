@@ -3,7 +3,7 @@ import axios from 'axios';
 // Create a shape generation API instance with common configuration
 const shapeGenerateApiInstance = axios.create({
     baseURL: `${import.meta.env.VITE_API_CHATBOT_AND_3D_GENERATION_BASE_URL}`, // Assuming shapes endpoint
-    timeout: 10000,
+    timeout: 1000000,
     headers: {
         'Content-Type': 'application/json',
     }

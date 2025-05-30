@@ -19,10 +19,11 @@ function Loader() {
     );
 }
 
-const ModelPreview = ({ modelPath }) => {
+const ModelPreview = ({ modelPath, color, material }) => {
     const [error, setError] = useState(null);
     const [modelUrl, setModelUrl] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loadingProgress, setLoadingProgress] = useState(0);
 
     useEffect(() => {
         if (!modelPath) {
@@ -31,19 +32,24 @@ const ModelPreview = ({ modelPath }) => {
             return;
         }
 
+        console.log('ModelPreview: Loading model from path:', modelPath);
+        console.log('ModelPreview: Using color:', color);
+        console.log('ModelPreview: Using material:', material);
+
         // Get download URL from Firebase Storage
         const modelRef = ref(storage, modelPath);
         getDownloadURL(modelRef)
             .then((url) => {
+                console.log('ModelPreview: Successfully got download URL:', url);
                 setModelUrl(url);
                 setLoading(false);
             })
             .catch((error) => {
-                console.error('Error getting download URL:', error);
+                console.error('ModelPreview: Error getting download URL:', error);
                 setError(error);
                 setLoading(false);
             });
-    }, [modelPath]);
+    }, [modelPath, color, material]);
 
     if (loading) {
         return (
@@ -55,8 +61,16 @@ const ModelPreview = ({ modelPath }) => {
 
     if (error) {
         return (
-            <div style={{ width: '100%', height: '400px', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f8f9fa' }}>
-                <p style={{ color: 'red' }}>Error: {error.message}</p>
+            <div style={{ width: '100%', height: '400px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#f8f9fa' }}>
+                <p style={{ color: 'red', fontWeight: 'bold' }}>Error Loading Model</p>
+                <p style={{ color: 'red', maxWidth: '80%', textAlign: 'center', overflowWrap: 'break-word' }}>
+                    {error.message || 'Unknown error'}
+                </p>
+                {modelPath && (
+                    <p style={{ fontSize: '0.9em', color: '#666', maxWidth: '80%', textAlign: 'center' }}>
+                        Model path: {modelPath}
+                    </p>
+                )}
             </div>
         );
     }
@@ -73,16 +87,21 @@ const ModelPreview = ({ modelPath }) => {
                     shadow-mapSize-height={1024}
                 />
                 
-                    {modelUrl && (
-                        <ModelLoader
-                            url={modelUrl}
-                            onError={(error) => {
-                                console.error('ModelLoader error:', error);
-                                setError(error);
-                            }}
-                        />
-                    )}
-                    <Environment preset="sunset" />
+                {modelUrl && (
+                    <ModelLoader
+                        url={modelUrl}
+                        color={color}
+                        material={material}
+                        onLoad={(data) => {
+                            console.log('ModelPreview: Model loaded successfully', data);
+                        }}
+                        onError={(error) => {
+                            console.error('ModelPreview: ModelLoader error:', error);
+                            setError(error);
+                        }}
+                    />
+                )}
+                <Environment preset="sunset" />
                 
                 <OrbitControls
                     enableZoom={true}

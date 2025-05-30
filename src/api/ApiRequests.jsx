@@ -191,6 +191,16 @@ export const reviewApiRequest = {
   deleteReview: (id) => apiInstance.delete(`/Review/${id}`),
 };
 
+export const statisticsApiRequest = {
+  getSalesStatistics: (period, startDate, endDate) => apiInstance.get(`/Stats/sales?period=${period}&startDate=${startDate}&endDate=${endDate}`),
+  getOrderCountStatistics: (period, startDate, endDate) => apiInstance.get(`/Stats/order-counts?period=${period}&startDate=${startDate}&endDate=${endDate}`),
+  getOverallStatistics: (startDate, endDate) => apiInstance.get(`/Stats/overall?startDate=${startDate}&endDate=${endDate}`),
+  getTopSellingProducts: (count, startDate, endDate) => apiInstance.get(`/Stats/top-sales-products?count=${count}&startDate=${startDate}&endDate=${endDate}`),
+  getOrderStatusPercentage: () => apiInstance.get(`/Stats/order-status-percentage`),
+  getCategoriesStock: () => apiInstance.get(`/Stats/categories-stock`),
+  getPromotionStatistics: (startDate, endDate) => apiInstance.get(`/Stats/promotion-statistics?startDate=${startDate}&endDate=${endDate}`),
+};
+
 export const shapeGenerateApiRequest = {
   generateShape: (data) => shapeGenerateApiInstance.post('/generate_shape', data),
   downloadGLB: (file_path) => shapeGenerateApiInstance.get(`/download_glb?shape_url=${encodeURIComponent(file_path)}`),

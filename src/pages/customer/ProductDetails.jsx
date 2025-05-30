@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, Row, Col, Image, Button, Card, Flex, InputNumber, Tabs, Select, Rate, Progress, Pagination, Skeleton, Radio, Empty, Avatar } from 'antd';
-import { ShoppingCartOutlined, HeartOutlined, HeartFilled, UpOutlined, DownOutlined, PlusOutlined, MinusOutlined, StarFilled, DeleteOutlined } from '@ant-design/icons';
+import { Typography, Row, Col, Image, Button, Card, Flex, InputNumber, Tabs, Select, Rate, Progress, Pagination, Skeleton, Radio, Empty, Avatar, Switch } from 'antd';
+import { ShoppingCartOutlined, HeartOutlined, HeartFilled, UpOutlined, DownOutlined, PlusOutlined, MinusOutlined, StarFilled, DeleteOutlined, EyeOutlined, CameraOutlined } from '@ant-design/icons';
 import { useMediaQuery } from 'react-responsive';
-import ReviewCard from '../../components/ReviewCard';
-import ProductCard from '../../components/ProductCard';
 import { ProductApiRequest, reviewApiRequest } from '../../api/ApiRequests';
 import AttributeTypes from '../../constants/AttributeTypes'
 import { addToCart, updateQuantity, removeFromCart } from '../../store/actions/CartAction';
 import { useDispatch, useSelector } from 'react-redux';
+import ModelView from '../../components/ModelView';
 const { Title, Text, Paragraph } = Typography;
 
 const ProductDetails = () => {
@@ -21,17 +20,23 @@ const ProductDetails = () => {
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [selectedAttributes, setSelectedAttributes] = useState({});
     const [mainImage, setMainImage] = useState('');
+    const [show3DModel, setShow3DModel] = useState(false);
+    const [modelColor, setModelColor] = useState('#ffffff');
+    const [modelMaterial, setModelMaterial] = useState({ 
+        roughness: 0.5, 
+        metalness: 0.5 
+    });
+
     const isMobile = useMediaQuery({ maxWidth: 768 });
-    
+
     // Reviews state
     const [reviewsData, setReviewsData] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [reviewsLoading, setReviewsLoading] = useState(false);
 
-    const itemInCart = useSelector(state => state.cart.items.filter(item => item.item.selectedVariant?.id === selectedVariant?.id ));
+    const itemInCart = useSelector(state => state.cart.items.filter(item => item.item.selectedVariant?.id === selectedVariant?.id));
 
-    const cartItems = useSelector(state => state.cart.items);
     var quantityInCart = itemInCart.length > 0 ? itemInCart[0].quantity : 0;
     console.log('quantityInCart', quantityInCart);
 
@@ -51,21 +56,32 @@ const ProductDetails = () => {
                     res.data.variants.$values[0].variantAttributes.$values) {
                     res.data.variants.$values[0].variantAttributes.$values.forEach(attr => {
                         initialAttributes[attr.attributeValue.attributeId] = attr.attributeValue.value;
+                        
+                        // If this is a color attribute, set the model color
+                        const isColorAttr = res.data.category?.categoryAttributes?.$values?.find(
+                            catAttr => catAttr.attributeId === attr.attributeValue.attributeId && 
+                                      catAttr.attribute.type === AttributeTypes.Color
+                        );
+                        
+                        if (isColorAttr) {
+                            setModelColor(attr.attributeValue.value);
+                            console.log('Initialize model color:', attr.attributeValue.value);
+                        }
                     });
                 }
                 setSelectedAttributes(initialAttributes);
             }
-            
+
             // Fetch reviews after product is loaded
             fetchReviews(id, 1, pageSize);
-            
+
             setLoading(false);
         } catch (err) {
             console.error('Error fetching product:', err);
             setLoading(false);
         }
     };
-    
+
     const fetchReviews = async (productId, page, size) => {
         try {
             setReviewsLoading(true);
@@ -81,7 +97,16 @@ const ProductDetails = () => {
     useEffect(() => {
         fetchProduct();
     }, [id]);
-    
+
+    // Synchronize model color with selected color attribute
+    useEffect(() => {
+        if (!product) return;
+        
+        const currentColor = getSelectedColor();
+        setModelColor(currentColor);
+        console.log('Updated model color from selectedAttributes:', currentColor);
+    }, [selectedAttributes, product]);
+
     // Handle reviews pagination change
     const handleReviewPageChange = (page) => {
         setCurrentPage(page);
@@ -112,14 +137,6 @@ const ProductDetails = () => {
         }
     }, [selectedAttributes, product]);
 
-    const review = {
-        avatar: 'https://product.hstatic.net/1000280685/product/mmh00286_802f4da93114489f9e12fda7ae52f7c7_large.jpg',
-        username: 'John Doe',
-        rating: 4.5,
-        content: 'This is a review',
-        date: '2024-01-01'
-    }
-
     const handleAddToCart = () => {
         if (quantityInCart > 0) {
             // Update existing cart item
@@ -129,17 +146,31 @@ const ProductDetails = () => {
                 },
                 quantity: quantityInCart + 1
             }));
-        } else {            
+        } else {
             // Add new item to cart with proper structure
             dispatch(addToCart({
                 item: {
                     selectedVariant,
                     product: product,
-                }, 
+                },
                 quantity: 1,
                 price: calculatePrice()
             }));
         }
+    };
+
+    // Helper function to get the current color from selected attributes
+    const getSelectedColor = () => {
+        if (!product || !product.category?.categoryAttributes?.$values) return "#ffffff";
+        
+        // Find the color attribute
+        const colorAttribute = Object.entries(selectedAttributes).find(([id, value]) => 
+            product.category.categoryAttributes.$values.find(attr => 
+                attr.attributeId === id && attr.attribute.type === AttributeTypes.Color
+            )
+        );
+        
+        return colorAttribute ? colorAttribute[1] : "#ffffff";
     };
 
     const handleQuantityChange = (value) => {
@@ -168,6 +199,16 @@ const ProductDetails = () => {
             ...prev,
             [attributeId]: value
         }));
+
+        // If this is a color attribute, update the model color as well
+        const isColorAttribute = product?.category?.categoryAttributes?.$values?.find(
+            attr => attr.attributeId === attributeId && attr.attribute.type === AttributeTypes.Color
+        );
+        
+        if (isColorAttribute) {
+            setModelColor(value);
+            console.log('Updated model color to:', value);
+        }
 
         // Find and update the selected variant based on the new attribute selection
         if (product && product.variants && product.variants.$values) {
@@ -207,11 +248,23 @@ const ProductDetails = () => {
         setMainImage(imageUrl);
     };
 
+    const toggleViewMode = () => {
+        // When toggling to 3D model view, make sure the color is set from selected attributes
+        if (!show3DModel) {
+            const currentColor = getSelectedColor();
+            setModelColor(currentColor);
+        }
+        
+        setShow3DModel(!show3DModel);
+    };
+
     if (product === undefined) {
         return (
             <Skeleton active paragraph={{ rows: 10 }} />
         );
     }
+
+    console.log(selectedVariant)
 
     return (
         <Flex vertical gap={32}>
@@ -220,91 +273,115 @@ const ProductDetails = () => {
                     <Image.PreviewGroup>
                         <Row gutter={[8, 8]} justify={isMobile ? 'center' : 'start'}>
                             <Col xs={24} md={20} lg={20} xl={20} style={{ display: 'flex', justifyContent: 'center' }}>
-                                <Image
-                                    src={mainImage}
-                                    alt={product?.name}
-                                    style={{ width: '100%', objectFit: 'cover' }}
-                                />
-                            </Col>
-                            <Col xs={24} md={4} lg={4} xl={4}  >
-                                <div style={{ position: 'relative', height: '100%', gap: 16 }}>
-                                    <Button
-                                        type='text'
-                                        icon={<UpOutlined />}
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: '50%',
-                                            transform: 'translateX(-50%)',
-                                            zIndex: 1,
-                                            display: isMobile ? 'none' : 'block'
-                                        }}
-                                        onClick={() => {
-                                            const container = document.querySelector('.image-scroll');
-                                            container.scrollTop -= 100;
-                                        }}
-                                    />
-                                    <Flex
-                                        vertical={!isMobile}
-                                        gap={16}
-                                        justify={isMobile ? 'center' : 'start'}
-                                        className="image-scroll"
-                                        style={{
-                                            maxHeight: isMobile ? 'auto' : '300px',
-                                            overflowY: 'visible',
-                                            scrollBehavior: 'smooth',
-                                            padding: '30px 0'
-                                        }}
-                                    >
-                                        <Image
-                                            width={isMobile ? 100 : '100%'}
-                                            preview={false}
-                                            src={product.imageUrl}
-                                            alt={`${product.name} main view`}
-                                            style={{
-                                                width: '100%',
-                                                objectFit: 'cover',
-                                                cursor: 'pointer',
-                                                border: mainImage === product.imageUrl ? '2px solid #1890ff' : '1px solid transparent'
-                                            }}
-                                            onClick={() => handleImageClick(product.imageUrl)}
-                                        />
-                                        {selectedVariant?.imageUrls?.$values?.map((imageUrl, index) => (
-                                            <Image
-                                                width={isMobile ? 100 : '100%'}
-                                                preview={false}
-                                                key={index}
-                                                src={imageUrl}
-                                                alt={`${product.name} view ${index + 2}`}
-                                                style={{
-                                                    width: '100%',
-                                                    objectFit: 'cover',
-                                                    cursor: 'pointer',
-                                                    border: mainImage === imageUrl ? '2px solid #1890ff' : '1px solid transparent'
-                                                }}
-                                                onClick={() => handleImageClick(imageUrl)}
+                                {
+                                    show3DModel ? (
+                                        <div style={{ width: '100%', height: '400px', position: 'relative' }}>
+                                            <ModelView
+                                                modelPath={product.modelUrl}
+                                                color={modelColor}
+                                                material={modelMaterial}
+                                                key={`modelview-${modelColor}`} // Force re-render when color changes
                                             />
-                                        ))}
-                                    </Flex>
-                                    <Button
-                                        type='text'
-                                        icon={<DownOutlined />}
-                                        style={{
-                                            position: 'absolute',
-                                            bottom: 0,
-                                            left: '50%',
-                                            transform: 'translateX(-50%)',
-                                            zIndex: 1,
-                                            display: isMobile ? 'none' : 'block'
-                                        }}
-                                        onClick={() => {
-                                            const container = document.querySelector('.image-scroll');
-                                            container.scrollTop += 100;
-                                        }}
+                                        </div>
+                                    ) : <Image
+                                        src={mainImage}
+                                        alt={product?.name}
+                                        style={{ width: '100%', objectFit: 'cover' }}
                                     />
-                                </div>
-
+                                }
+                                <Button
+                                    type={show3DModel ? 'primary' : 'default'}
+                                    icon={show3DModel ? <EyeOutlined /> : <CameraOutlined />}
+                                    style={{ position: 'absolute', top: 16, right: 16, zIndex: 1 }}
+                                    onClick={toggleViewMode}
+                                >
+                                    {show3DModel ? 'View Image' : 'View 3D Model'}
+                                </Button>
                             </Col>
+                            {
+                                !show3DModel && (
+                                    <Col xs={24} md={4} lg={4} xl={4}  >
+                                        <div style={{ position: 'relative', height: '100%', gap: 16 }}>
+                                            <Button
+                                                type='text'
+                                                icon={<UpOutlined />}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: '50%',
+                                                    transform: 'translateX(-50%)',
+                                                    zIndex: 1,
+                                                    display: isMobile ? 'none' : 'block'
+                                                }}
+                                                onClick={() => {
+                                                    const container = document.querySelector('.image-scroll');
+                                                    container.scrollTop -= 100;
+                                                }}
+                                            />
+                                            <Flex
+                                                vertical={!isMobile}
+                                                gap={16}
+                                                justify={isMobile ? 'center' : 'start'}
+                                                className="image-scroll"
+                                                style={{
+                                                    maxHeight: isMobile ? 'auto' : '300px',
+                                                    overflowY: 'visible',
+                                                    scrollBehavior: 'smooth',
+                                                    padding: '30px 0'
+                                                }}
+                                            >
+                                                <Image
+                                                    width={isMobile ? 100 : '100%'}
+                                                    preview={false}
+                                                    src={product.imageUrl}
+                                                    alt={`${product.name} main view`}
+                                                    style={{
+                                                        width: '100%',
+                                                        objectFit: 'cover',
+                                                        cursor: 'pointer',
+                                                        border: mainImage === product.imageUrl ? '2px solid #1890ff' : '1px solid transparent'
+                                                    }}
+                                                    onClick={() => handleImageClick(product.imageUrl)}
+                                                />
+                                                {selectedVariant?.imageUrls?.$values?.map((imageUrl, index) => (
+                                                    <Image
+                                                        width={isMobile ? 100 : '100%'}
+                                                        preview={false}
+                                                        key={index}
+                                                        src={imageUrl}
+                                                        alt={`${product.name} view ${index + 2}`}
+                                                        style={{
+                                                            width: '100%',
+                                                            objectFit: 'cover',
+                                                            cursor: 'pointer',
+                                                            border: mainImage === imageUrl ? '2px solid #1890ff' : '1px solid transparent'
+                                                        }}
+                                                        onClick={() => handleImageClick(imageUrl)}
+                                                    />
+                                                ))}
+                                            </Flex>
+                                            <Button
+                                                type='text'
+                                                icon={<DownOutlined />}
+                                                style={{
+                                                    position: 'absolute',
+                                                    bottom: 0,
+                                                    left: '50%',
+                                                    transform: 'translateX(-50%)',
+                                                    zIndex: 1,
+                                                    display: isMobile ? 'none' : 'block'
+                                                }}
+                                                onClick={() => {
+                                                    const container = document.querySelector('.image-scroll');
+                                                    container.scrollTop += 100;
+                                                }}
+                                            />
+                                        </div>
+
+                                    </Col>
+                                )
+                            }
+
                         </Row>
                     </Image.PreviewGroup>
                 </Col>
@@ -431,17 +508,17 @@ const ProductDetails = () => {
                                 {
                                     quantityInCart === 0 && (
                                         <Button
-                                    style={{ padding: '0px 40px' }}
-                                    type="primary"
-                                    icon={<ShoppingCartOutlined />}
-                                    size="large"
-                                    onClick={handleAddToCart}
-                                    disabled={!selectedVariant || selectedVariant.stock <= 0}
-                                >
-                                    Add to Cart
-                                </Button>)
+                                            style={{ padding: '0px 40px' }}
+                                            type="primary"
+                                            icon={<ShoppingCartOutlined />}
+                                            size="large"
+                                            onClick={handleAddToCart}
+                                            disabled={!selectedVariant || selectedVariant.stock <= 0}
+                                        >
+                                            Add to Cart
+                                        </Button>)
                                 }
-                                
+
                                 <Button
                                     icon={isFavorite ? <HeartFilled /> : <HeartOutlined />}
                                     size="large"
@@ -491,18 +568,18 @@ const ProductDetails = () => {
                                                 <>
                                                     {[5, 4, 3, 2, 1].map(rating => {
                                                         const count = reviewsData.ratingCounts[rating] || 0;
-                                                        const percent = reviewsData.totalReviews > 0 
-                                                            ? (count / reviewsData.totalReviews) * 100 
+                                                        const percent = reviewsData.totalReviews > 0
+                                                            ? (count / reviewsData.totalReviews) * 100
                                                             : 0;
-                                                        
+
                                                         return (
                                                             <Flex key={rating} gap={8} align="center">
                                                                 <Typography.Text>{rating}</Typography.Text>
                                                                 <StarFilled style={{ color: '#FFD700' }} />
-                                                                <Progress 
-                                                                    strokeColor="#FFD700" 
-                                                                    percent={percent} 
-                                                                    format={percent => `${count}`} 
+                                                                <Progress
+                                                                    strokeColor="#FFD700"
+                                                                    percent={percent}
+                                                                    format={percent => `${count}`}
                                                                 />
                                                             </Flex>
                                                         );
@@ -514,10 +591,10 @@ const ProductDetails = () => {
                                                         <Flex key={rating} gap={8} align="center">
                                                             <Typography.Text>{rating}</Typography.Text>
                                                             <StarFilled style={{ color: '#FFD700' }} />
-                                                            <Progress 
-                                                                strokeColor="#FFD700" 
-                                                                percent={0} 
-                                                                format={() => '0'} 
+                                                            <Progress
+                                                                strokeColor="#FFD700"
+                                                                percent={0}
+                                                                format={() => '0'}
                                                             />
                                                         </Flex>
                                                     ))}
@@ -532,30 +609,30 @@ const ProductDetails = () => {
                                             ) : reviewsData && reviewsData.reviews && reviewsData.reviews.data && reviewsData.reviews.data.$values && reviewsData.reviews.data.$values.length > 0 ? (
                                                 <div style={{ width: '100%' }}>
                                                     {reviewsData.reviews.data.$values.map((review) => (
-                                                        <Card 
-                                                            key={review.id} 
+                                                        <Card
+                                                            key={review.id}
                                                             style={{ marginBottom: 16 }}
                                                             border={false}
                                                             className="review-card"
-                                                            
+
                                                         >
                                                             <Flex align="center" gap={8} style={{ marginTop: 8, marginBottom: 8 }} justify='space-between'>
-                                                                    <Flex align="center" gap={8}>
-                                                                        <Avatar 
-                                                                            size={32} 
-                                                                            src={review.orderDetail?.order?.user?.imageUrl} 
-                                                                            alt="User" 
-                                                                        />
-                                                                        <Text strong>
-                                                                            {review.orderDetail?.order?.user?.name || 'Anonymous'}
-                                                                        </Text>
-                                                                        </Flex>
-                                                                        <Text type="secondary">
-                                                                            {new Date(review.createdAt).toLocaleDateString()}
-                                                                        </Text>
-                                                                    </Flex>
+                                                                <Flex align="center" gap={8}>
+                                                                    <Avatar
+                                                                        size={32}
+                                                                        src={review.orderDetail?.order?.user?.imageUrl}
+                                                                        alt="User"
+                                                                    />
+                                                                    <Text strong>
+                                                                        {review.orderDetail?.order?.user?.name || 'Anonymous'}
+                                                                    </Text>
+                                                                </Flex>
+                                                                <Text type="secondary">
+                                                                    {new Date(review.createdAt).toLocaleDateString()}
+                                                                </Text>
+                                                            </Flex>
                                                             <Flex align="start" gap={16}>
-                                                                
+
                                                                 <div>
                                                                     {review.orderDetail && review.orderDetail.variant && review.orderDetail.variant.imageUrls && review.orderDetail.variant.imageUrls.$values && review.orderDetail.variant.imageUrls.$values.length > 0 ? (
                                                                         <Image
@@ -576,10 +653,10 @@ const ProductDetails = () => {
                                                                             preview={false}
                                                                         />
                                                                     ) : (
-                                                                        <div 
-                                                                            style={{ 
-                                                                                width: 80, 
-                                                                                height: 80, 
+                                                                        <div
+                                                                            style={{
+                                                                                width: 80,
+                                                                                height: 80,
                                                                                 background: '#f0f0f0',
                                                                                 display: 'flex',
                                                                                 alignItems: 'center',
@@ -593,7 +670,7 @@ const ProductDetails = () => {
                                                                 <Flex vertical style={{ flex: 1 }}>
                                                                     <Flex justify="space-between" align="center">
                                                                         <Rate disabled value={review.rating} allowHalf />
-                                                                        
+
                                                                     </Flex>
                                                                     <Paragraph style={{ margin: '8px 0' }}>
                                                                         {review.reviewText}
@@ -605,12 +682,12 @@ const ProductDetails = () => {
                                                                             </Text>
                                                                         )}
                                                                     </div>
-                                                                    
+
                                                                 </Flex>
                                                             </Flex>
                                                         </Card>
                                                     ))}
-                                                    
+
                                                     <Flex justify="center" style={{ marginTop: 16 }}>
                                                         <Pagination
                                                             current={reviewsData.reviews.pageNumber}
