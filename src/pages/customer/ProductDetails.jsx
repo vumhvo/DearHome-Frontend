@@ -264,8 +264,6 @@ const ProductDetails = () => {
         );
     }
 
-    console.log(selectedVariant)
-
     return (
         <Flex vertical gap={32}>
             <Row gutter={[32, 32]}>
@@ -384,6 +382,10 @@ const ProductDetails = () => {
 
                         </Row>
                     </Image.PreviewGroup>
+                    {product.modelUrl && (
+                        <></>
+                    //   <XRScene modelUrl={product.modelUrl} />
+                    )}
                 </Col>
 
                 <Col xs={24} md={12}>

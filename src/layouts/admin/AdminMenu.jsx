@@ -5,32 +5,40 @@ import { Menu } from 'antd';
 
 
 
-const AdminMenu = () => {
+const AdminMenu = ({ onMenuItemClick }) => {
     const navigate = useNavigate();
+    
+    const handleMenuClick = (path) => {
+        navigate(path);
+        if (onMenuItemClick) {
+            onMenuItemClick();
+        }
+    };
+    
     const menuItems = [
         {
             key: 'dashboard',
             icon: <DashboardOutlined />,
             label: 'Dashboard',
-            onClick: () => navigate('/admin/dashboard'),
+            onClick: () => handleMenuClick('/admin/dashboard'),
         },
         {
             key: 'products',
             icon: <ShoppingOutlined />,
             label: 'Products',
-            onClick: () => navigate('/admin/products'),
+            onClick: () => handleMenuClick('/admin/products'),
         },
         {
             key: 'inventory',
             icon: <StockOutlined />,    
             label: 'Inventory',
-            onClick: () => navigate('/admin/inventory'),
+            onClick: () => handleMenuClick('/admin/inventory'),
         },
         {
             key: 'orders',
             icon: <ShoppingCartOutlined />,
             label: 'Orders',
-            onClick: () => navigate('/admin/orders'),
+            onClick: () => handleMenuClick('/admin/orders'),
         },
         {
             key: 'application',
@@ -40,17 +48,17 @@ const AdminMenu = () => {
                 {
                     key: 'applications-categories',
                     label: 'Categories & Placement',
-                    onClick: () => navigate('/admin/application/categories'),
+                    onClick: () => handleMenuClick('/admin/application/categories'),
                 },
                 {
                     key: 'applications-attributes',
                     label: 'Product Attributes',
-                    onClick: () => navigate('/admin/application/attributes'),
+                    onClick: () => handleMenuClick('/admin/application/attributes'),
                 },
                 {
                     key: 'applications-banners',
                     label: 'Banner Settings',
-                    onClick: () => navigate('/admin/application/banners'),
+                    onClick: () => handleMenuClick('/admin/application/banners'),
                 }
             ]
         },
@@ -58,19 +66,19 @@ const AdminMenu = () => {
             key: 'customers',
             icon: <UserOutlined />,
             label: 'Customers',
-            onClick: () => navigate('/admin/customers'),
+            onClick: () => handleMenuClick('/admin/customers'),
         },
         {
             key: 'test-cors',
             icon: <CloudOutlined />,
             label: 'Test CORS',
-            onClick: () => navigate('/admin/test-cors'),
+            onClick: () => handleMenuClick('/admin/test-cors'),
         },
         {
             key: 'promotions',
             icon: <UserOutlined />,
             label: 'Promotions',
-            onClick: () => navigate('/admin/promotions'),
+            onClick: () => handleMenuClick('/admin/promotions'),
         },
 
     ];

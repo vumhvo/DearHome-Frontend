@@ -95,6 +95,11 @@ export const bannerApiRequest = {
   deleteBanner: (id) => apiInstance.delete(`/banners/${id}`),
 };
 
+// Design generation endpoints
+export const designApiRequest = {
+  generateDesign: (prompt) => apiInstance.post('/design/generate', { prompt }),
+};
+
 // Cart endpoints
 export const cartApiRequest = {
   getCart: () => apiInstance.get('/cart'),
@@ -207,4 +212,8 @@ export const shapeGenerateApiRequest = {
   proxyFirebaseModel: (url) => shapeGenerateApiInstance.get(`/proxy-model?url=${encodeURIComponent(url)}`, {
     responseType: 'blob'
   })
+};
+
+export const virtualRoomApiRequest = {
+  generateVirtualLayout: (data) => shapeGenerateApiInstance.post('/virtual_room/generate_virtual_layout', data),
 };

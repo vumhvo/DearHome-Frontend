@@ -1,52 +1,87 @@
 import React from 'react';
 import { useThree } from '@react-three/fiber';
 import { Box } from '@react-three/drei';
+import Wall from '../models/Wall';
+import Floor from '../models/Floor';
 
-const Room = ({roomDimensions, material}) => {
+const defaultWallConfig = {
+  hasDoor: false,
+  doorPosition: 0,
+  doorWidth: 1,
+  doorHeight: 2.1,
+  windows: []
+};
 
-
+const Room = ({ 
+  roomDimensions, 
+  material,
+  frontWall = defaultWallConfig,
+  backWall = defaultWallConfig,
+  leftWall = defaultWallConfig,
+  rightWall = defaultWallConfig
+}) => {
   return (
     <group>
       {/* Floor */}
-      <Box
-        args={[roomDimensions.width, 0.1, roomDimensions.depth]}
-        position={[0, 0, 0]}
-        receiveShadow
-      >
-        <meshStandardMaterial color={material.floorMaterial} />
-      </Box>
+      <Floor
+        position={[0, -0.2, 0]}
+        width={roomDimensions.width}
+        height={roomDimensions.length}
+        color={material.floorMaterial}
+        transparent={false}
+      />
 
       {/*Front Wall*/}
-      <Box
-        args={[roomDimensions.width, roomDimensions.height, 0.1]}
-        position={[0, roomDimensions.height / 2, roomDimensions.depth / 2]}
-      >
-        <meshStandardMaterial color={material.wallMaterial} />
-      </Box>
+      <Wall
+        position={[0, roomDimensions.height / 2 - 0.2, roomDimensions.length / 2]}
+        rotation={[0, Math.PI, 0]}
+        width={roomDimensions.width}
+        height={roomDimensions.height}
+        length={0.1}
+        color={material.wallMaterial}
+        transparent={false}
+        opacity={1}
+        {...frontWall}
+      />
 
       {/* Back Wall */}
-      <Box
-        args={[roomDimensions.width, roomDimensions.height, 0.1]}
-        position={[0, roomDimensions.height / 2, -roomDimensions.depth / 2]}
-      >
-        <meshStandardMaterial color={material.wallMaterial} />
-      </Box>
+      <Wall
+        position={[0, roomDimensions.height / 2 - 0.2, -roomDimensions.length / 2]}
+        rotation={[0, 0, 0]}
+        width={roomDimensions.width}
+        height={roomDimensions.height}
+        length={0.1}
+        color={material.wallMaterial}
+        transparent={false}
+        opacity={1}
+        {...backWall}
+      />
 
       {/* Left Wall */}
-      <Box
-        args={[0.1, roomDimensions.height, roomDimensions.depth]}
-        position={[-roomDimensions.width / 2, roomDimensions.height / 2, 0]}
-      >
-        <meshStandardMaterial color={material.wallMaterial} />
-      </Box>
+      <Wall
+        position={[-roomDimensions.width / 2, roomDimensions.height / 2 - 0.2, 0]}
+        rotation={[0, -Math.PI / 2, 0]}
+        width={roomDimensions.length}
+        height={roomDimensions.height}
+        length={0.1}
+        color={material.wallMaterial}
+        transparent={false}
+        opacity={1}
+        {...leftWall}
+      />
 
       {/* Right Wall */}
-      <Box
-        args={[0.1, roomDimensions.height, roomDimensions.depth]}
-        position={[roomDimensions.width / 2, roomDimensions.height / 2, 0]}
-      >
-        <meshStandardMaterial color={material.wallMaterial} />
-      </Box>
+      <Wall
+        position={[roomDimensions.width / 2, roomDimensions.height / 2 - 0.2, 0]}
+        rotation={[0, Math.PI / 2, 0]}
+        width={roomDimensions.length}
+        height={roomDimensions.height}
+        length={0.1}
+        color={material.wallMaterial}
+        transparent={false}
+        opacity={1}
+        {...rightWall}
+      />
     </group>
   );
 };

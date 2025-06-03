@@ -4,7 +4,6 @@ import Home from './pages/customer/Home';
 import CustomerLayout from './layouts/customer/CustomerLayout';
 import Products from './pages/customer/Products';
 import CategoryDetails from './pages/customer/CategoryDetails';
-import ProductDetailsWithModelView from './pages/customer/ProductDetailsWithModelView';
 import Cart from './pages/customer/Cart';
 import Checkout from './pages/customer/Checkout';
 import { URLS } from './constants/urls';
@@ -19,7 +18,6 @@ import ProductAttribute from './pages/admin/application/ProductAttribute';
 import Order from './pages/admin/order/Order';
 import Customers from './pages/admin/customers/Customers';
 import Promotions from './pages/admin/promotion/Promotions';
-import InteriorDesign from './pages/customer/InteriorDesign';
 import EditGoodReceivedNote from './pages/admin/inventory/EditGoodReceivedNote';
 import UserProfile from './pages/personalization/UserProfile';
 import VerifyPayment from './pages/customer/VerifyPayment';
@@ -27,6 +25,7 @@ import OrderTracking from './pages/customer/OrderTracking';
 import ReviewOrder from './pages/customer/ReviewOrder';
 import TestCors from './pages/admin/TestCors';
 import ProductDetails from './pages/customer/ProductDetails';
+import VirtualRoomPlanner from './pages/customer/VirtualRoomPlanner';
 
 const AppRouter = () => {
   return (
@@ -41,10 +40,11 @@ const AppRouter = () => {
             <Route path={URLS.CUSTOMER.PROFILE} element={<UserProfile />} />  
             <Route path={URLS.CUSTOMER.CATEGORY_DETAIL(':slug', ':parentSlug')} element={<CategoryDetails />} />
             <Route path={URLS.CUSTOMER.CATEGORY_DETAIL(':slug')} element={<CategoryDetails />} />
-            <Route path={URLS.CUSTOMER.INTERIOR_DESIGN} element={<InteriorDesign />} />
             <Route path={URLS.CUSTOMER.VERIFY_PAYMENT} element={<VerifyPayment />} />
             <Route path={URLS.CUSTOMER.ORDER_TRACKING} element={<OrderTracking/>} />
             <Route path={URLS.CUSTOMER.REVIEW_ORDER(':id')} element={<ReviewOrder/>} />
+            <Route path={URLS.CUSTOMER.VIRTUAL_ROOM_PLANNER} element={<VirtualRoomPlanner />} />
+
         </Route>
         <Route path={URLS.AUTH.LOGIN} element={<Auth />}>
         </Route>

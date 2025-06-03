@@ -4,8 +4,7 @@ import { OrbitControls, Environment } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { useLoader } from '@react-three/fiber';
 
-const ThreeDScene = ({ children }) => {
-
+const ThreeDScene = ({ children, orbitControlsEnabled = true }) => {
   return (
     <div style={{ width: '100%', height: '600px' }}>
       <Canvas
@@ -25,7 +24,14 @@ const ThreeDScene = ({ children }) => {
        
           <Environment preset="apartment" />
         </Suspense>
-        <OrbitControls enableDamping dampingFactor={0.1} />
+        <OrbitControls 
+          enableDamping 
+          dampingFactor={0.1} 
+          enabled={orbitControlsEnabled}
+          enableRotate={orbitControlsEnabled}
+          enablePan={orbitControlsEnabled}
+          enableZoom={orbitControlsEnabled}
+        />
       
       </Canvas>
     </div>

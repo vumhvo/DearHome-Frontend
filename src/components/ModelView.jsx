@@ -5,26 +5,10 @@ import { ref, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase/config';
 import ModelLoader from './virtual-room/ModelLoader';
 
-function Loader() {
-    return (
-        <div style={{ 
-            width: '100%', 
-            height: '100%', 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center' 
-        }}>
-            <p>Loading model...</p>
-        </div>
-    );
-}
-
 const ModelView = ({ modelPath, material, color }) => {
     const [error, setError] = useState(null);
     const [modelUrl, setModelUrl] = useState(null);
     const [loading, setLoading] = useState(true);
-    
-    console.log('ModelView render - color:', color, 'material:', material);
 
     useEffect(() => {
         console.log('ModelView useEffect - modelPath:', modelPath, 'color:', color);

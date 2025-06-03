@@ -333,7 +333,12 @@ const Dashboard = () => {
         <>
             <Typography.Title style={{ marginTop: 0 }} level={2}>Dashboard</Typography.Title>
             
-            <Flex justify="end" style={{ marginBottom: 16 }} gap={16}>
+            <Flex 
+                justify={{ xs: 'center', sm: 'end' }} 
+                style={{ marginBottom: 16 }} 
+                gap={{ xs: 8, sm: 16 }}
+                wrap="wrap"
+            >
                 <Button 
                     icon={<ReloadOutlined />} 
                     onClick={() => {
@@ -353,12 +358,12 @@ const Dashboard = () => {
                     value={dateRange}
                     allowClear={true}
                     placeholder={['1 Year Ago', 'Today']}
-                    style={{ minWidth: '300px' }}
+                    style={{ width: '100%', maxWidth: '300px' }}
                 />
             </Flex>
             
             <Row gutter={[16, 16]}>
-                <Col span={6}>
+                <Col xs={24} sm={12} md={6}>
                     <Card>
                         <Statistic
                             title="Total Sales"
@@ -370,7 +375,7 @@ const Dashboard = () => {
                         />
                     </Card>
                 </Col>
-                <Col span={6}>
+                <Col xs={24} sm={12} md={6}>
                     <Card>
                         <Statistic
                             title="Total Orders"
@@ -380,7 +385,7 @@ const Dashboard = () => {
                         />
                     </Card>
                 </Col>
-                <Col span={6}>
+                <Col xs={24} sm={12} md={6}>
                     <Card>
                         <Statistic
                             title="Total Products"
@@ -390,7 +395,7 @@ const Dashboard = () => {
                         />
                     </Card>
                 </Col>
-                <Col span={6}>
+                <Col xs={24} sm={12} md={6}>
                     <Card>
                         <Statistic
                             title="Total Customers"
@@ -406,8 +411,8 @@ const Dashboard = () => {
                     <Card style={{ marginTop: 16 }}>
                         <Tabs defaultActiveKey="sales"
                             tabBarExtraContent={{
-                                right: <Flex justify='space-between' align='center' gap={16}>
-                                    <Radio.Group value={periodType} onChange={handlePeriodTypeChange}>
+                                right: <Flex justify='space-between' align='center' gap={{ xs: 8, sm: 16 }} wrap="wrap">
+                                    <Radio.Group value={periodType} onChange={handlePeriodTypeChange} size={{ xs: 'small', sm: 'middle' }}>
                                         <Radio.Button value="daily">Daily</Radio.Button>
                                         <Radio.Button value="monthly">Monthly</Radio.Button>
                                         <Radio.Button value="yearly">Yearly</Radio.Button>
@@ -422,8 +427,8 @@ const Dashboard = () => {
                             }}
                         >
                             <Tabs.TabPane tab={`Sales (${loading ? 'Loading...' : `${(overallStats.totalSales || 0).toLocaleString('vnd', { style: 'currency', currency: 'VND' })}`})`} key="sales">
-                                <Row gutter={16}>
-                                    <Col span={18}>
+                                <Row gutter={[16, 16]}>
+                                    <Col xs={24} md={18}>
                                         {loading ? (
                                             <div style={{ height: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                                 <Typography.Text>Loading sales data...</Typography.Text>
@@ -469,7 +474,7 @@ const Dashboard = () => {
                                             />
                                         )}
                                     </Col>
-                                    <Col span={6}>
+                                    <Col xs={24} md={6}>
                                         <Typography>Sales Ranking</Typography>
                                         {loadingTopProducts ? (
                                             <div style={{ height: '150px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -522,8 +527,8 @@ const Dashboard = () => {
 
                             </Tabs.TabPane>
                             <Tabs.TabPane tab={`Orders (${loading ? 'Loading...' : (overallStats.totalOrders || 0).toLocaleString()})`} key="orders">
-                                <Row gutter={16}>
-                                    <Col span={18}>
+                                <Row gutter={[16, 16]}>
+                                    <Col xs={24} md={18}>
                                         {loading ? (
                                             <div style={{ height: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                                 <Typography.Text>Loading orders data...</Typography.Text>
@@ -569,7 +574,7 @@ const Dashboard = () => {
                                             />
                                         )}
                                     </Col>
-                                    <Col span={6}>
+                                    <Col xs={24} md={6}>
                                         <Typography>Orders Ranking</Typography>
                                         {loadingTopProducts ? (
                                             <div style={{ height: '150px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -626,7 +631,7 @@ const Dashboard = () => {
             </Row>
 
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-                <Col span={12}>
+                <Col xs={24} lg={12}>
                     <Card 
                         title="Promotion Effectiveness" 
                         extra={
@@ -649,14 +654,14 @@ const Dashboard = () => {
                             </div>
                         ) : (
                             <Row gutter={[12, 12]}>
-                                <Col span={12}>
+                                <Col xs={24} sm={12}>
                                     <Card>
                                         <Statistic 
                                             title="Total Items Sold" 
                                             value={promotionStats.reduce((sum, item) => sum + (item.items || 0), 0)} 
                                         />
                                     </Card>
-                                </Col>                                            <Col span={12}>
+                                </Col>                                            <Col xs={24} sm={12}>
                                     <Card>
                                         <Statistic 
                                             title="Total Discount Amount" 
@@ -666,8 +671,7 @@ const Dashboard = () => {
                                             formatter={(value) => value.toLocaleString('vnd', { style: 'currency', currency: 'VND' })}
                                         />
                                     </Card>
-                                </Col>
-                                <Col span={24}>
+                                </Col>                                            <Col span={24}>
                                     <Table
                                         dataSource={promotionStats}
                                         columns={[
@@ -725,7 +729,7 @@ const Dashboard = () => {
                         )}
                     </Card>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} lg={12}>
                     <Card title="Proportion of Order Status" style={{ height: '100%' }}>
                        
                         <Row gutter={[12, 12]} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -783,7 +787,7 @@ const Dashboard = () => {
                 </Col>
             </Row>
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-                <Col span={24}>
+                <Col xs={24}>
                     <Card title="Inventory Management">
                         {loadingCategoriesStock ? (
                             <div style={{ height: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -794,7 +798,7 @@ const Dashboard = () => {
                                 <Typography.Text>No inventory data available</Typography.Text>
                             </div>
                         ) : (
-                            <Tabs>
+                            <Tabs size={{ xs: 'small', sm: 'middle' }}>
                                 {categoriesStock.map((category, index) => (
                                     <Tabs.TabPane 
                                         tab={
@@ -803,6 +807,7 @@ const Dashboard = () => {
                                                 <Progress 
                                                     percent={Math.round(category.percentage)} 
                                                     status={category.percentage > 0 ? "active" : "exception"}
+                                                    size="small"
                                                 />
                                             </Flex>
                                         } 
