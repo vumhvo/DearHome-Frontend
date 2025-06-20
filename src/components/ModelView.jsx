@@ -32,6 +32,8 @@ const ModelView = ({ modelPath, material, color }) => {
             });
     }, [modelPath]);
 
+    console.log(modelUrl)
+
     if (loading) {
         return (
             <div style={{ width: '100%', height: '400px', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f8f9fa' }}>

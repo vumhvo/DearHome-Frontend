@@ -48,7 +48,7 @@ export const URLS = {
         VERIFY_PAYMENT: '/verify-payment',
         ORDER_TRACKING: '/order-tracking',
         REVIEW_ORDER: (id) => `/review-order/${id}`,
-        VIRTUAL_ROOM_PLANNER: '/virtual-room-planner',
+        VR_PLACEMENT: '/vr-placement',
     }
 };
 

@@ -1,6 +1,7 @@
 import VerifyPayment from '../pages/customer/VerifyPayment';
 import apiInstance from './ApiInstance';
 import shapeGenerateApiInstance from './ShapeGenerateApiInstance';
+import chatbotWsInstance from './ChatbotWsInstance';
 
 // Auth endpoints
 export const authApiRequest = {
@@ -217,3 +218,11 @@ export const shapeGenerateApiRequest = {
 export const virtualRoomApiRequest = {
   generateVirtualLayout: (data) => shapeGenerateApiInstance.post('/virtual_room/generate_virtual_layout', data),
 };
+
+export const chatbotWs = {
+  connectWebSocket: () => {
+    const ws = chatbotWsInstance.connectWebSocket();
+    
+    return ws;
+  }
+}

@@ -1,8 +1,10 @@
 import { Layout, Menu, Button, Flex, Image, Typography, Grid, Avatar } from 'antd';
-import { ShoppingCartOutlined } from '@ant-design/icons';
+import { ShoppingCartOutlined, MessageOutlined } from '@ant-design/icons';
 import { useNavigate, Outlet } from 'react-router-dom';
+import { useState } from 'react';
 import logo from '../../assets/images/logo.png';
 import CustomerMenu from './CustomerMenu';
+import Chatbot from '../../components/Chatbot';
 const { Header, Content, Footer } = Layout;
 const { useBreakpoint } = Grid;
 import { useSelector } from 'react-redux';
@@ -12,6 +14,7 @@ const CustomerLayout = ({ children }) => {
     const navigate = useNavigate();
     const screens = useBreakpoint();
     const user = useSelector(state => state.auth.user);
+    const [showChat, setShowChat] = useState(false);
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -131,9 +134,39 @@ const CustomerLayout = ({ children }) => {
 
             <Content style={{ 
                 padding: screens.md ? '20px' : '10px', 
-                background: '#fff' 
+                background: '#fff',
+                position: 'relative'
             }}>
                 <Outlet />
+                {/* Floating Chat Button */}
+                <Button
+                    type="primary"
+                    shape="circle"
+                    size="large"
+                    icon={<MessageOutlined />}
+                    onClick={() => setShowChat(!showChat)}
+                    style={{
+                        position: 'fixed',
+                        right: '20px',
+                        bottom: '20px',
+                        zIndex: 1000,
+                        width: '48px',
+                        height: '48px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                    }}
+                />
+                
+                {/* Chatbot Component */}
+                {/* <div style={{
+                    position: 'fixed',
+                    right: '20px',
+                    bottom: '80px',
+                    zIndex: 1000,
+                    display: showChat ? 'block' : 'none',
+                    transition: 'all 0.3s'
+                }}>
+                    <Chatbot />
+                </div> */}
             </Content>
 
             <Footer style={{ 

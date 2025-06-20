@@ -69,12 +69,6 @@ const AdminMenu = ({ onMenuItemClick }) => {
             onClick: () => handleMenuClick('/admin/customers'),
         },
         {
-            key: 'test-cors',
-            icon: <CloudOutlined />,
-            label: 'Test CORS',
-            onClick: () => handleMenuClick('/admin/test-cors'),
-        },
-        {
             key: 'promotions',
             icon: <UserOutlined />,
             label: 'Promotions',

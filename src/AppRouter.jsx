@@ -23,31 +23,22 @@ import UserProfile from './pages/personalization/UserProfile';
 import VerifyPayment from './pages/customer/VerifyPayment';
 import OrderTracking from './pages/customer/OrderTracking';
 import ReviewOrder from './pages/customer/ReviewOrder';
-import TestCors from './pages/admin/TestCors';
 import ProductDetails from './pages/customer/ProductDetails';
 import VirtualRoomPlanner from './pages/customer/VirtualRoomPlanner';
+import VRPlacement from './pages/customer/VRPlacement';
 
 const AppRouter = () => {
   return (
     <HashRouter>
       <Routes>
-        <Route path={URLS.CUSTOMER.HOME} element={<CustomerLayout />}>
-            <Route index element={<Home />} />
-            <Route path={URLS.CUSTOMER.PRODUCTS} element={<Products />} />
-            <Route path={`${URLS.CUSTOMER.PRODUCT_DETAIL(':id')}`} element={<ProductDetails />} />
-            <Route path={URLS.CUSTOMER.CART} element={<Cart />} />
-            <Route path={URLS.CUSTOMER.CHECKOUT} element={<Checkout />} />
-            <Route path={URLS.CUSTOMER.PROFILE} element={<UserProfile />} />  
-            <Route path={URLS.CUSTOMER.CATEGORY_DETAIL(':slug', ':parentSlug')} element={<CategoryDetails />} />
-            <Route path={URLS.CUSTOMER.CATEGORY_DETAIL(':slug')} element={<CategoryDetails />} />
-            <Route path={URLS.CUSTOMER.VERIFY_PAYMENT} element={<VerifyPayment />} />
-            <Route path={URLS.CUSTOMER.ORDER_TRACKING} element={<OrderTracking/>} />
-            <Route path={URLS.CUSTOMER.REVIEW_ORDER(':id')} element={<ReviewOrder/>} />
-            <Route path={URLS.CUSTOMER.VIRTUAL_ROOM_PLANNER} element={<VirtualRoomPlanner />} />
-
-        </Route>
         <Route path={URLS.AUTH.LOGIN} element={<Auth />}>
         </Route>
+        <Route path={URLS.AUTH.RESET_PASSWORD} element={<Auth />} />
+        <Route path={URLS.CUSTOMER.VERIFY_PAYMENT} element={<VerifyPayment />} />
+
+        {/* VR Placement as a top-level route */}
+        <Route path={URLS.CUSTOMER.VR_PLACEMENT} element={<VRPlacement />} />
+
         <Route path='/admin' element={<AdminLayout />}>
             <Route path='dashboard' element={<Dashboard />} />
             <Route path='products'  >
@@ -72,8 +63,22 @@ const AppRouter = () => {
             <Route path='promotions' >
               <Route index element={<Promotions />} />
             </Route>
-            <Route path='test-cors' element={<TestCors />} />
             <Route path={URLS.ADMIN.PROFILE} element={<UserProfile />} />
+        </Route>
+
+        {/* Customer Routes (within CustomerLayout) */}
+        <Route path="/" element={<CustomerLayout />}>
+            <Route index element={<Home />} />
+            <Route path={URLS.CUSTOMER.PRODUCTS} element={<Products />} />
+            <Route path={`${URLS.CUSTOMER.PRODUCT_DETAIL(':id')}`} element={<ProductDetails />} />
+            <Route path={URLS.CUSTOMER.CART} element={<Cart />} />
+            <Route path={URLS.CUSTOMER.CHECKOUT} element={<Checkout />} />
+            <Route path={URLS.CUSTOMER.PROFILE} element={<UserProfile />} />  
+            <Route path={URLS.CUSTOMER.CATEGORY_DETAIL(':slug', ':parentSlug')} element={<CategoryDetails />} />
+            <Route path={URLS.CUSTOMER.CATEGORY_DETAIL(':slug')} element={<CategoryDetails />} />
+            <Route path={URLS.CUSTOMER.VERIFY_PAYMENT} element={<VerifyPayment />} />
+            <Route path={URLS.CUSTOMER.ORDER_TRACKING} element={<OrderTracking/>} />
+            <Route path={URLS.CUSTOMER.REVIEW_ORDER(':id')} element={<ReviewOrder/>} />
         </Route>
       </Routes>
     </HashRouter>

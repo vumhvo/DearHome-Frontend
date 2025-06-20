@@ -11,6 +11,7 @@ const CustomerMenu = () => {
     { key: 'about', label: 'ABOUT US', onClick: () => navigate(URLS.CUSTOMER.ABOUT) },
     { key: 'contact', label: 'CONTACT', onClick: () => navigate(URLS.CUSTOMER.CONTACT) },
     { key: 'order-tracking', label: 'ORDER TRACKING', onClick: () => navigate(URLS.CUSTOMER.ORDER_TRACKING) },
+    { key: 'vr-placement', label: 'VR PLACEMENT', onClick: () => navigate(URLS.CUSTOMER.VR_PLACEMENT) },
   ];
 
   return (

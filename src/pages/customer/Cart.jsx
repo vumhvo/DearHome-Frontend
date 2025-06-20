@@ -73,7 +73,6 @@ const Cart = () => {
                         <Image src={imageUrl} width={100} height={100} style={{objectFit: 'cover'}} />
                         <Flex vertical justify="start" gap={8} style={{flex: 1, minWidth: 200}}>
                             <Typography.Text style={{fontSize: 16, fontWeight: 500}}>{text?.toUpperCase()}</Typography.Text>
-                            <Typography.Text type="secondary">{record.item.product.description}</Typography.Text>
                             {renderVariantAttributes(record)}
                             <Typography.Text type="secondary">SKU: {record.item.sku}</Typography.Text>
                         </Flex>
