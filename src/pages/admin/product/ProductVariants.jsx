@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Upload, App, Tag, Tooltip, Image } from 'antd';
+import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Upload, App, Tag, Tooltip, Image, Radio } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
 import { VariantApiRequest, AttributeApiRequest, UploadApiRequest } from '../../../api/ApiRequests';
+import { shapeGenerateApiRequest } from '../../../api/ApiRequests';
+import ModelPreview from '../../../components/ModelPreview';
+import ErrorBoundary from '../../../components/ErrorBoundary';
 
 const { Option } = Select;
 
@@ -12,6 +15,10 @@ const ProductVariants = ({ productId, attributes }) => {
     const [editingVariant, setEditingVariant] = useState(null);
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState([]);
+    const [modelUrl, setModelUrl] = useState('');
+    const [modelPreviewUrl, setModelPreviewUrl] = useState('');
+    const [generating3DModel, setGenerating3DModel] = useState(false);
+    const [selectedImageForModel, setSelectedImageForModel] = useState(null);
     const { message } = App.useApp();
 
     useEffect(() => {
@@ -38,6 +45,8 @@ const ProductVariants = ({ productId, attributes }) => {
     const handleAddVariant = () => {
         setEditingVariant(null);
         setFileList([]);
+        setModelUrl('');
+        setModelPreviewUrl('');
         form.resetFields();
         
         // Set default values for attributes
@@ -60,7 +69,9 @@ const ProductVariants = ({ productId, attributes }) => {
 
     const handleEditVariant = (variant) => {
         setEditingVariant(variant);
-        
+        setModelUrl(variant.modelUrl || '');
+        setModelPreviewUrl(variant.modelUrl || '');
+        setSelectedImageForModel(0); // Select first image by default when editing
         // Prepare form values with variant attributes
         const formValues = {
             sku: variant.sku,
@@ -102,6 +113,43 @@ const ProductVariants = ({ productId, attributes }) => {
         } catch (error) {
             message.error('Failed to delete variant');
             console.error(error);
+        }
+    };
+
+    const handleGenerate3DModel = async () => {
+        if (!fileList.length || selectedImageForModel === null) {
+            message.error('Please upload and select an image first');
+            return;
+        }
+
+        const selectedFile = fileList[selectedImageForModel];
+        const imageUrl = selectedFile.url || (selectedFile.originFileObj && URL.createObjectURL(selectedFile.originFileObj));
+        if (!imageUrl) {
+            message.error('Invalid image file');
+            return;
+        }
+
+        try {
+            setGenerating3DModel(true);
+            message.loading('Generating 3D model from image. This may take a minute...', 0);
+            const response = await shapeGenerateApiRequest.generateShape({
+                caption: 'shape',
+                image_path: fileList[0].url,
+            });
+            if (response.data && response.data.storage_file_path) {
+                const shapeUrl = response.data.storage_file_path;
+                setModelUrl(shapeUrl);
+                setModelPreviewUrl(shapeUrl);
+                message.success('3D model generated successfully');
+            } else {
+                throw new Error('Failed to generate 3D model');
+            }
+        } catch (error) {
+            console.error('Error generating 3D model:', error);
+            message.error('Failed to generate 3D model: ' + (error.message || 'Unknown error'));
+        } finally {
+            setGenerating3DModel(false);
+            message.destroy();
         }
     };
 
@@ -148,7 +196,8 @@ const ProductVariants = ({ productId, attributes }) => {
                 isActive: true,
                 sku: values.sku || `SKU-${Date.now()}`,
                 productId,
-                variantAttributes
+                variantAttributes,
+                modelUrl: modelUrl || '',
             };
             
             if (editingVariant) {
@@ -174,6 +223,15 @@ const ProductVariants = ({ productId, attributes }) => {
 
     const handleFileChange = ({ fileList }) => {
         setFileList(fileList);
+        // Clear model preview and selected image if all images are removed
+        if (fileList.length === 0) {
+            setModelUrl('');
+            setModelPreviewUrl('');
+            setSelectedImageForModel(null);
+        } else if (!selectedImageForModel && fileList.length > 0) {
+            // Select first image by default if none selected
+            setSelectedImageForModel(0);
+        }
     };
 
     const columns = [
@@ -264,6 +322,91 @@ const ProductVariants = ({ productId, attributes }) => {
                     form={form}
                     layout="vertical"
                 >
+                    <Form.Item>
+                        <div style={{ color: 'gray', marginBottom: 16 }}>
+                            <b>Note:</b> 3D models are managed per variant. Upload or generate a 3D model for this variant below.
+                        </div>
+                    </Form.Item>
+                    
+                    <Form.Item label="Images">
+                        <Upload
+                            listType="picture-card"
+                            fileList={fileList}
+                            onChange={handleFileChange}
+                            beforeUpload={() => false}
+                        >
+                            <div>
+                                <PlusOutlined />
+                                <div style={{ marginTop: 8 }}>Upload</div>
+                            </div>
+                        </Upload>
+                        {!fileList.length && (
+                            <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
+                                Please upload an image first to enable 3D model generation
+                            </div>
+                        )}
+                    </Form.Item>
+                    
+                    {fileList.length > 0 && (
+                        <Form.Item label="Select Image for 3D Model">
+                            <Radio.Group 
+                                value={selectedImageForModel}
+                                onChange={(e) => setSelectedImageForModel(e.target.value)}
+                                style={{ display: 'flex', gap: '16px' }}
+                            >
+                                {fileList.map((file, index) => (
+                                    <Radio key={index} value={index} style={{ display: 'flex', alignItems: 'center' }}>
+                                        <Image 
+                                            src={file.url || URL.createObjectURL(file.originFileObj)} 
+                                            alt={`Image ${index + 1}`}
+                                            style={{ width: '60px', height: '60px', objectFit: 'cover', marginLeft: '8px' }}
+                                            preview={false}
+                                        />
+                                    </Radio>
+                                ))}
+                            </Radio.Group>
+                        </Form.Item>
+                    )}
+                    
+                    <Form.Item label="3D Model">
+                        {modelPreviewUrl ? (
+                            <div>
+                                <div style={{ marginBottom: 16 }}>
+                                    <Button 
+                                        type="primary" 
+                                        onClick={handleGenerate3DModel}
+                                        loading={generating3DModel}
+                                        disabled={!fileList.length || selectedImageForModel === null}
+                                    >
+                                        Regenerate 3D Model
+                                    </Button>
+                                </div>
+                                <div style={{ height: 300, border: '1px solid #d9d9d9', borderRadius: 2, overflow: 'hidden' }}>
+                                    <ErrorBoundary>
+                                        <ModelPreview modelPath={modelPreviewUrl} />
+                                    </ErrorBoundary>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <Button 
+                                    type="primary" 
+                                    onClick={handleGenerate3DModel}
+                                    loading={generating3DModel}
+                                    disabled={!fileList.length || selectedImageForModel === null}
+                                >
+                                    Generate 3D Model from Selected Image
+                                </Button>
+                                <p style={{ marginTop: 8, color: fileList.length ? 'gray' : '#ff4d4f', fontStyle: 'italic' }}>
+                                    {!fileList.length ? 
+                                        'Please upload at least one image before generating a 3D model' :
+                                        selectedImageForModel === null ?
+                                        'Please select an image to generate the 3D model' :
+                                        'Our AI will automatically generate a 3D model based on your selected image'}
+                                </p>
+                            </div>
+                        )}
+                    </Form.Item>
                     <Form.Item
                         name="sku"
                         label="SKU"
@@ -284,20 +427,6 @@ const ProductVariants = ({ productId, attributes }) => {
                             style={{ width: '100%' }}
                             placeholder="Enter price adjustment"
                         />
-                    </Form.Item>
-                    
-                    <Form.Item label="Images">
-                        <Upload
-                            listType="picture-card"
-                            fileList={fileList}
-                            onChange={handleFileChange}
-                            beforeUpload={() => false}
-                        >
-                            <div>
-                                <PlusOutlined />
-                                <div style={{ marginTop: 8 }}>Upload</div>
-                            </div>
-                        </Upload>
                     </Form.Item>
                     
                     {attributes.map(attr => {
