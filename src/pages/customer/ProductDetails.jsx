@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Typography, Row, Col, Image, Button, Card, Flex, InputNumber, Tabs, Select, Rate, Progress, Pagination, Skeleton, Radio, Empty, Avatar, Switch } from 'antd';
-import { ShoppingCartOutlined, HeartOutlined, HeartFilled, UpOutlined, DownOutlined, PlusOutlined, MinusOutlined, StarFilled, DeleteOutlined, EyeOutlined, CameraOutlined } from '@ant-design/icons';
+import { ShoppingCartOutlined, HeartOutlined, HeartFilled, UpOutlined, DownOutlined, PlusOutlined, MinusOutlined, StarFilled, DeleteOutlined, EyeOutlined, CameraOutlined, MobileOutlined } from '@ant-design/icons';
 import { useMediaQuery } from 'react-responsive';
 import { ProductApiRequest, reviewApiRequest } from '../../api/ApiRequests';
 import AttributeTypes from '../../constants/AttributeTypes'
 import { addToCart, updateQuantity, removeFromCart } from '../../store/actions/CartAction';
 import { useDispatch, useSelector } from 'react-redux';
 import ModelView from '../../components/ModelView';
+import { URLS } from '../../constants/urls';
 const { Title, Text, Paragraph } = Typography;
 
 const ProductDetails = () => {
     const { id } = useParams();
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [product, setProduct] = useState();
     const [isFavorite, setIsFavorite] = useState(false);
@@ -221,6 +223,17 @@ const ProductDetails = () => {
         setShow3DModel(!show3DModel);
     };
 
+    const navigateToAR = () => {
+        if (selectedVariant?.modelUrl) {
+            navigate(URLS.CUSTOMER.VR_PLACEMENT, {
+                state: { 
+                    modelUrl: selectedVariant.modelUrl,
+                    productName: product.name,
+                }
+            });
+        }
+    };
+
     if (product === undefined) {
         return (
             <Skeleton active paragraph={{ rows: 10 }} />
@@ -267,21 +280,27 @@ const ProductDetails = () => {
                                         style={{ width: '100%', objectFit: 'cover' }}
                                     />
                                 }
-                                <Button
-                                    type={show3DModel ? 'primary' : 'default'}
-                                    icon={show3DModel ? <EyeOutlined /> : <CameraOutlined />}
-                                    style={{ 
-                                        position: 'absolute', 
-                                        top: 16, 
-                                        right: 16, 
-                                        zIndex: 1,
-                                        opacity: selectedVariant?.modelUrl ? 1 : 0.5
-                                    }}
-                                    onClick={toggleViewMode}
-                                    disabled={!selectedVariant?.modelUrl}
-                                >
-                                    {show3DModel ? 'View Image' : 'View 3D Model'}
-                                </Button>
+                                <Flex gap={8} style={{ position: 'absolute', top: 16, right: 16, zIndex: 1 }}>
+                                    <Button
+                                        type={show3DModel ? 'primary' : 'default'}
+                                        icon={show3DModel ? <EyeOutlined /> : <CameraOutlined />}
+                                        style={{ 
+                                            opacity: selectedVariant?.modelUrl ? 1 : 0.5
+                                        }}
+                                        onClick={toggleViewMode}
+                                        disabled={!selectedVariant?.modelUrl}
+                                    >
+                                        {show3DModel ? 'View Image' : 'View 3D'}
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        icon={<MobileOutlined />}
+                                        onClick={navigateToAR}
+                                        disabled={!selectedVariant?.modelUrl}
+                                    >
+                                        Try in AR
+                                    </Button>
+                                </Flex>
                             </Col>
                             {
                                 !show3DModel && (

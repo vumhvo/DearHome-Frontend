@@ -19,6 +19,7 @@ const ProductVariants = ({ productId, attributes }) => {
     const [modelPreviewUrl, setModelPreviewUrl] = useState('');
     const [generating3DModel, setGenerating3DModel] = useState(false);
     const [selectedImageForModel, setSelectedImageForModel] = useState(null);
+    const [uploadedImages, setUploadedImages] = useState([]);
     const { message } = App.useApp();
 
     useEffect(() => {
@@ -116,26 +117,101 @@ const ProductVariants = ({ productId, attributes }) => {
         }
     };
 
+    const handleFileChange = async ({ fileList }) => {
+        setFileList(fileList);
+        
+        // If all images are removed, reset states
+        if (fileList.length === 0) {
+            setModelUrl('');
+            setModelPreviewUrl('');
+            setSelectedImageForModel(null);
+            setUploadedImages([]);
+            return;
+        }
+
+        // Find new files that need to be uploaded
+        const newFiles = fileList.filter(file => file.originFileObj && !file.url);
+        
+        if (newFiles.length > 0) {
+            try {
+                setLoading(true);
+                const uploadPromises = newFiles.map(async (file) => {
+                    const formData = new FormData();
+                    formData.append('file', file.originFileObj);
+                    const response = await UploadApiRequest.uploadImage(formData);
+                    return {
+                        uid: file.uid,
+                        url: response.data
+                    };
+                });
+
+                const uploadedResults = await Promise.all(uploadPromises);
+                
+                // Update fileList with uploaded URLs
+                const updatedFileList = fileList.map(file => {
+                    const uploadedFile = uploadedResults.find(result => result.uid === file.uid);
+                    if (uploadedFile) {
+                        return {
+                            ...file,
+                            status: 'done',
+                            url: uploadedFile.url,
+                            isUploaded: true
+                        };
+                    }
+                    return file;
+                });
+
+                setFileList(updatedFileList);
+                setUploadedImages(prevImages => [...prevImages, ...uploadedResults]);
+                
+                // Select first image by default if none selected
+                if (selectedImageForModel === null) {
+                    setSelectedImageForModel(0);
+                }
+
+                message.success('Images uploaded successfully');
+            } catch (error) {
+                message.error('Failed to upload images');
+                console.error('Upload error:', error);
+                
+                // Update failed uploads in fileList
+                const updatedFileList = fileList.map(file => {
+                    if (file.originFileObj) {
+                        return {
+                            ...file,
+                            status: 'error'
+                        };
+                    }
+                    return file;
+                });
+                setFileList(updatedFileList);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     const handleGenerate3DModel = async () => {
         if (!fileList.length || selectedImageForModel === null) {
-            message.error('Please upload and select an image first');
+            message.error('Please select an image first');
             return;
         }
 
         const selectedFile = fileList[selectedImageForModel];
-        const imageUrl = selectedFile.url || (selectedFile.originFileObj && URL.createObjectURL(selectedFile.originFileObj));
-        if (!imageUrl) {
-            message.error('Invalid image file');
+        if (!selectedFile.url) {
+            message.error('Please wait for the image to finish uploading');
             return;
         }
 
         try {
             setGenerating3DModel(true);
             message.loading('Generating 3D model from image. This may take a minute...', 0);
+            
             const response = await shapeGenerateApiRequest.generateShape({
                 caption: 'shape',
-                image_path: fileList[0].url,
+                image_path: selectedFile.url, // Use the uploaded image URL
             });
+            
             if (response.data && response.data.storage_file_path) {
                 const shapeUrl = response.data.storage_file_path;
                 setModelUrl(shapeUrl);
@@ -199,6 +275,8 @@ const ProductVariants = ({ productId, attributes }) => {
                 variantAttributes,
                 modelUrl: modelUrl || '',
             };
+
+            console.log('Variant Data:', variantData);
             
             if (editingVariant) {
                 // Update existing variant
@@ -218,19 +296,6 @@ const ProductVariants = ({ productId, attributes }) => {
             console.error(error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleFileChange = ({ fileList }) => {
-        setFileList(fileList);
-        // Clear model preview and selected image if all images are removed
-        if (fileList.length === 0) {
-            setModelUrl('');
-            setModelPreviewUrl('');
-            setSelectedImageForModel(null);
-        } else if (!selectedImageForModel && fileList.length > 0) {
-            // Select first image by default if none selected
-            setSelectedImageForModel(0);
         }
     };
 
@@ -324,7 +389,7 @@ const ProductVariants = ({ productId, attributes }) => {
                 >
                     <Form.Item>
                         <div style={{ color: 'gray', marginBottom: 16 }}>
-                            <b>Note:</b> 3D models are managed per variant. Upload or generate a 3D model for this variant below.
+                            <b>Note:</b> Images will be automatically uploaded when selected. After upload, you can generate a 3D model from any uploaded image.
                         </div>
                     </Form.Item>
                     
@@ -355,16 +420,46 @@ const ProductVariants = ({ productId, attributes }) => {
                                 style={{ display: 'flex', gap: '16px' }}
                             >
                                 {fileList.map((file, index) => (
-                                    <Radio key={index} value={index} style={{ display: 'flex', alignItems: 'center' }}>
-                                        <Image 
-                                            src={file.url || URL.createObjectURL(file.originFileObj)} 
-                                            alt={`Image ${index + 1}`}
-                                            style={{ width: '60px', height: '60px', objectFit: 'cover', marginLeft: '8px' }}
-                                            preview={false}
-                                        />
+                                    <Radio 
+                                        key={index} 
+                                        value={index} 
+                                        style={{ display: 'flex', alignItems: 'center' }}
+                                        disabled={!file.url} // Disable if image is not uploaded yet
+                                    >
+                                        <div style={{ position: 'relative' }}>
+                                            <Image 
+                                                src={file.url || URL.createObjectURL(file.originFileObj)} 
+                                                alt={`Image ${index + 1}`}
+                                                style={{ 
+                                                    width: '60px', 
+                                                    height: '60px', 
+                                                    objectFit: 'cover', 
+                                                    marginLeft: '8px',
+                                                    opacity: file.url ? 1 : 0.5
+                                                }}
+                                                preview={false}
+                                            />
+                                            {!file.url && (
+                                                <div style={{ 
+                                                    position: 'absolute', 
+                                                    top: '50%', 
+                                                    left: '50%', 
+                                                    transform: 'translate(-50%, -50%)',
+                                                    color: '#999',
+                                                    fontSize: '12px'
+                                                }}>
+                                                    Uploading...
+                                                </div>
+                                            )}
+                                        </div>
                                     </Radio>
                                 ))}
                             </Radio.Group>
+                            <div style={{ marginTop: 8, color: 'gray', fontStyle: 'italic' }}>
+                                {fileList.some(file => !file.url) ? 
+                                    'Please wait for images to finish uploading before generating 3D model' :
+                                    'Select an image to generate its 3D model'}
+                            </div>
                         </Form.Item>
                     )}
                     
@@ -432,7 +527,7 @@ const ProductVariants = ({ productId, attributes }) => {
                     {attributes.map(attr => {
                         const attributeValues = attr.attributeValues?.$values || [];
                         // Get the first attribute value as default if available
-                        const defaultValue = editingVariant?.variantAttributes?.$values[0].attributeValue.id;
+                        const defaultValue = editingVariant?.variantAttributes?.$values[0]?.attributeValue?.id;
                     
                         return (
                             <Form.Item
