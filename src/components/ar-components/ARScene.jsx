@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { XRHandModel, XRHitTest, useXRHandState, useXREvent } from '@react-three/xr';
 import { Canvas } from '@react-three/fiber';
-import { XR, ARButton } from '@react-three/xr';
+import { XR } from '@react-three/xr';
 import * as THREE from 'three';
 import { CameraOutlined, EnvironmentOutlined, AimOutlined, SelectOutlined } from '@ant-design/icons';
 import CenterHitTestPoint from './CenterHitTestPoint';
-import ModelLoader from '../virtual-room/ModelLoader';
+import ModelLoader from '../ar-components/ModelLoader';
 import { storage } from '../../firebase/config';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { createXRStore } from '@react-three/xr';

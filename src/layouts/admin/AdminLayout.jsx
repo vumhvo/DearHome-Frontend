@@ -60,8 +60,7 @@ const AdminLayout = () => {
           collapsible 
           collapsed={collapsed}
         >
-          <div style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)' }} />
-          <AdminMenu />
+          <AdminMenu collapsed={collapsed} />
         </Sider>
       )}
 
@@ -71,11 +70,10 @@ const AdminLayout = () => {
         closable={false}
         onClose={() => setMobileMenuOpen(false)}
         open={isMobile && mobileMenuOpen}
-        width={200}
+        width={250}
         bodyStyle={{ padding: 0, background: '#fff' }}
       >
-        <div style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)' }} />
-        <AdminMenu onMenuItemClick={() => setMobileMenuOpen(false)} />
+        <AdminMenu onMenuItemClick={() => setMobileMenuOpen(false)} collapsed={false} />
       </Drawer>
 
       <Layout style={{ marginLeft: isMobile ? 0 : (collapsed ? 70 : 190) }}>

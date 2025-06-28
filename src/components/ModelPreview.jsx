@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase/config';
-import ModelLoader from './virtual-room/ModelLoader';
+import ModelLoader from './ar-components/ModelLoader';
 
 function Loader() {
     return (

@@ -231,8 +231,8 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                 <Form.Item>
                     <div style={{ color: 'gray', marginBottom: 16 }}>
                         <b>Note:</b> 3D models are now managed per variant. Please add variants and assign 3D models after creating the product.
-                    </div>
-                </Form.Item>
+                            </div>
+                    </Form.Item>
 
                 <Form.Item
                     name="name"

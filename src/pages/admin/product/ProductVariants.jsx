@@ -275,8 +275,6 @@ const ProductVariants = ({ productId, attributes }) => {
                 variantAttributes,
                 modelUrl: modelUrl || '',
             };
-
-            console.log('Variant Data:', variantData);
             
             if (editingVariant) {
                 // Update existing variant

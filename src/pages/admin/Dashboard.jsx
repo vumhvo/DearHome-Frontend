@@ -1,5 +1,5 @@
-import { Row, Col, Card, Statistic, Typography, Tabs, Flex, Button, Tooltip, Radio, List, Table, Progress, DatePicker, message } from 'antd';
-import { ShoppingOutlined, UserOutlined, DollarOutlined, ShoppingCartOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Row, Col, Card, Statistic, Typography, Tabs, Flex, Button, Tooltip, Radio, List, Table, Progress, DatePicker, message, Space, Avatar, Divider, Tag } from 'antd';
+import { ShoppingOutlined, UserOutlined, DollarOutlined, ShoppingCartOutlined, ReloadOutlined, TrophyOutlined, RiseOutlined, FallOutlined, FireOutlined, StarOutlined, CalendarOutlined, SyncOutlined } from '@ant-design/icons';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { useState, useEffect } from 'react';
@@ -331,94 +331,280 @@ const Dashboard = () => {
 
     return (
         <>
-            <Typography.Title style={{ marginTop: 0 }} level={2}>Dashboard</Typography.Title>
-            
-            <Flex 
-                justify={{ xs: 'center', sm: 'end' }} 
-                style={{ marginBottom: 16 }} 
-                gap={{ xs: 8, sm: 16 }}
-                wrap="wrap"
-            >
-                <Button 
-                    icon={<ReloadOutlined />} 
-                    onClick={() => {
-                        fetchOverallStats();
-                        fetchSalesAndOrdersByPeriod();
-                        fetchTopSellingProducts();
-                        fetchOrderStatusPercentage();
-                        fetchCategoriesStock();
-                        fetchPromotionStatistics();
-                        message.success('Dashboard data refreshed');
-                    }}
-                >
-                    Refresh All Data
-                </Button>
-                <DatePicker.RangePicker 
-                    onChange={handleDateRangeChange}
-                    value={dateRange}
-                    allowClear={true}
-                    placeholder={['1 Year Ago', 'Today']}
-                    style={{ width: '100%', maxWidth: '300px' }}
-                />
-            </Flex>
-            
+            {/* Enhanced Header Section */}
+            <div style={{
+                background: 'linear-gradient(135deg, #fadb14 0%, #f39c12 100%)',
+                borderRadius: '16px',
+                padding: '24px',
+                marginBottom: '24px',
+                boxShadow: '0 8px 32px rgba(250, 219, 20, 0.3)',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                {/* Background Pattern */}
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '200px',
+                    height: '200px',
+                    background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    transform: 'translate(50px, -50px)'
+                }} />
+                
+                <Row align="middle" justify="space-between" wrap={false}>
+                    <Col flex="auto">
+                        <Space direction="vertical" size={4}>
+                            <Flex align="center" gap={16}>
+                                <Avatar 
+                                    size={64}
+                                    style={{ 
+                                        background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+                                        color: '#f39c12',
+                                        fontSize: '28px',
+                                        boxShadow: '0 4px 16px rgba(0,0,0,0.1)'
+                                    }}
+                                    icon={<TrophyOutlined />}
+                                />
+                                <div>
+                                    <Typography.Title level={2} style={{ 
+                                        margin: 0, 
+                                        color: '#2c3e50',
+                                        fontWeight: 'bold',
+                                        textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}>
+                                        Welcome to DearHome Dashboard
+                                    </Typography.Title>
+                                    <Typography.Text style={{ 
+                                        color: '#2c3e50', 
+                                        fontSize: '16px',
+                                        opacity: 0.8
+                                    }}>
+                                        Monitor your business performance and insights
+                                    </Typography.Text>
+                                </div>
+                            </Flex>
+                        </Space>
+                    </Col>
+                    <Col>
+                        <Space direction="vertical" size={8} align="end">
+                            <Typography.Text style={{ 
+                                color: '#2c3e50', 
+                                fontSize: '14px',
+                                fontWeight: 500
+                            }}>
+                                <CalendarOutlined style={{ marginRight: 8 }} />
+                                {dayjs().format('MMMM DD, YYYY')}
+                            </Typography.Text>
+                            <Tag 
+                                color="success" 
+                                style={{ 
+                                    background: 'rgba(255,255,255,0.9)',
+                                    color: '#52c41a',
+                                    border: 'none',
+                                    borderRadius: '16px',
+                                    padding: '4px 12px',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                ⭐ Live Data
+                            </Tag>
+                        </Space>
+                    </Col>
+                </Row>
+            </div>
+
+            {/* Control Panel */}
+            <Card style={{ 
+                marginBottom: '24px',
+                borderRadius: '12px',
+                border: '1px solid rgba(250, 219, 20, 0.3)',
+                boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)'
+            }}>
+                <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
+                    <Space>
+                        <Button 
+                            type="primary"
+                            size="large"
+                            icon={<SyncOutlined />}
+                            style={{
+                                background: 'linear-gradient(135deg, #fadb14 0%, #f39c12 100%)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                color: '#2c3e50',
+                                fontWeight: 'bold',
+                                boxShadow: '0 4px 12px rgba(250, 219, 20, 0.3)'
+                            }}
+                            onClick={() => {
+                                fetchOverallStats();
+                                fetchSalesAndOrdersByPeriod();
+                                fetchTopSellingProducts();
+                                fetchOrderStatusPercentage();
+                                fetchCategoriesStock();
+                                fetchPromotionStatistics();
+                                message.success('Dashboard data refreshed successfully!');
+                            }}
+                        >
+                            Refresh All Data
+                        </Button>
+                        <Typography.Text type="secondary">
+                            Last updated: {dayjs().format('HH:mm')}
+                        </Typography.Text>
+                    </Space>
+                    <DatePicker.RangePicker 
+                        onChange={handleDateRangeChange}
+                        value={dateRange}
+                        allowClear={true}
+                        placeholder={['Start Date', 'End Date']}
+                        style={{ 
+                            borderRadius: '8px',
+                            borderColor: '#fadb14'
+                        }}
+                        size="large"
+                    />
+                </Flex>
+            </Card>
+
+
             <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} md={6}>
-                    <Card>
+                    <Card style={{
+                        borderRadius: '12px',
+                        border: '1px solid rgba(250, 219, 20, 0.3)',
+                        boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)',
+                        transition: 'all 0.3s ease'
+                    }}
+                    hoverable>
                         <Statistic
-                            title="Total Sales"
+                            title={
+                                <Space>
+                                    <span style={{ color: '#8c8c8c' }}>Total Sales</span>
+                                </Space>
+                            }
                             value={overallStats.totalSales}
-                            prefix={<DollarOutlined />}
+                            prefix={<DollarOutlined style={{ color: '#f39c12' }} />}
                             precision={2}
                             loading={loading}
                             formatter={(value) => value.toLocaleString('vnd', { style: 'currency', currency: 'VND' })}
+                            valueStyle={{ 
+                                color: '#f39c12',
+                                fontWeight: 'bold',
+                                fontSize: '24px'
+                            }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                    <Card>
+                    <Card style={{
+                        borderRadius: '12px',
+                        border: '1px solid rgba(250, 219, 20, 0.3)',
+                        boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)',
+                        transition: 'all 0.3s ease'
+                    }}
+                    hoverable>
                         <Statistic
-                            title="Total Orders"
+                            title={
+                                <Space>
+                                    <span style={{ color: '#8c8c8c' }}>Total Orders</span>
+                                </Space>
+                            }
                             value={overallStats.totalOrders}
-                            prefix={<ShoppingCartOutlined />}
+                            prefix={<ShoppingCartOutlined style={{ color: '#e67e22' }} />}
                             loading={loading}
+                            valueStyle={{ 
+                                color: '#e67e22',
+                                fontWeight: 'bold',
+                                fontSize: '24px'
+                            }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                    <Card>
+                    <Card style={{
+                        borderRadius: '12px',
+                        border: '1px solid rgba(250, 219, 20, 0.3)',
+                        boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)',
+                        transition: 'all 0.3s ease'
+                    }}
+                    hoverable>
                         <Statistic
-                            title="Total Products"
+                            title={
+                                <Space>
+                                    <span style={{ color: '#8c8c8c' }}>Total Products</span>
+                                </Space>
+                            }
                             value={overallStats.totalProducts}
-                            prefix={<ShoppingOutlined />}
+                            prefix={<ShoppingOutlined style={{ color: '#f1c40f' }} />}
                             loading={loading}
+                            valueStyle={{ 
+                                color: '#f1c40f',
+                                fontWeight: 'bold',
+                                fontSize: '24px'
+                            }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                    <Card>
+                    <Card style={{
+                        borderRadius: '12px',
+                        border: '1px solid rgba(250, 219, 20, 0.3)',
+                        boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)',
+                        transition: 'all 0.3s ease'
+                    }}
+                    hoverable>
                         <Statistic
-                            title="Total Customers"
+                            title={
+                                <Space>
+                                    <span style={{ color: '#8c8c8c' }}>Total Customers</span>
+                                </Space>
+                            }
                             value={overallStats.totalCustomers}
-                            prefix={<UserOutlined />}
+                            prefix={<UserOutlined style={{ color: '#d68910' }} />}
                             loading={loading}
+                            valueStyle={{ 
+                                color: '#d68910',
+                                fontWeight: 'bold',
+                                fontSize: '24px'
+                            }}
                         />
                     </Card>
                 </Col>
             </Row>
             <Row gutter={[16, 16]}>
                 <Col span={24}>
-                    <Card style={{ marginTop: 16 }}>
+                    <Card style={{ 
+                        marginTop: 16,
+                        borderRadius: '12px',
+                        border: '1px solid rgba(250, 219, 20, 0.3)',
+                        boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)'
+                    }}>
                         <Tabs defaultActiveKey="sales"
+                            style={{
+                                '.ant-tabs-tab': {
+                                    color: '#f39c12'
+                                }
+                            }}
                             tabBarExtraContent={{
                                 right: <Flex justify='space-between' align='center' gap={{ xs: 8, sm: 16 }} wrap="wrap">
-                                    <Radio.Group value={periodType} onChange={handlePeriodTypeChange} size={{ xs: 'small', sm: 'middle' }}>
-                                        <Radio.Button value="daily">Daily</Radio.Button>
-                                        <Radio.Button value="monthly">Monthly</Radio.Button>
-                                        <Radio.Button value="yearly">Yearly</Radio.Button>
+                                    <Radio.Group 
+                                        value={periodType} 
+                                        onChange={handlePeriodTypeChange} 
+                                        size={{ xs: 'small', sm: 'middle' }}
+                                        style={{
+                                            borderRadius: '8px'
+                                        }}
+                                    >
+                                        <Radio.Button value="daily" style={{ borderColor: '#fadb14', color: '#f39c12' }}>Daily</Radio.Button>
+                                        <Radio.Button value="monthly" style={{ borderColor: '#fadb14', color: '#f39c12' }}>Monthly</Radio.Button>
+                                        <Radio.Button value="yearly" style={{ borderColor: '#fadb14', color: '#f39c12' }}>Yearly</Radio.Button>
                                     </Radio.Group>
                                     <Button 
                                         icon={<ReloadOutlined />} 
+                                        style={{
+                                            borderColor: '#fadb14',
+                                            color: '#f39c12'
+                                        }}
                                         onClick={() => fetchSalesAndOrdersByPeriod()}
                                     >
                                         Refresh
@@ -446,8 +632,12 @@ const Dashboard = () => {
                                                         {
                                                             label: 'Sales (VND)',
                                                             data: salesByPeriod.map(item => item.value),
-                                                            fill: false,
-                                                            borderColor: '#1890ff',
+                                                            fill: true,
+                                                            backgroundColor: 'rgba(250, 219, 20, 0.1)',
+                                                            borderColor: '#fadb14',
+                                                            pointBackgroundColor: '#f39c12',
+                                                            pointBorderColor: '#ffffff',
+                                                            pointBorderWidth: 2,
                                                             tension: 0.4
                                                         }
                                                     ]
@@ -457,6 +647,12 @@ const Dashboard = () => {
                                                     plugins: {
                                                         legend: {
                                                             position: 'top',
+                                                            labels: {
+                                                                color: '#f39c12',
+                                                                font: {
+                                                                    weight: 'bold'
+                                                                }
+                                                            }
                                                         },
                                                         title: {
                                                             display: false
@@ -465,8 +661,20 @@ const Dashboard = () => {
                                                     scales: {
                                                         y: {
                                                             beginAtZero: true,
+                                                            grid: {
+                                                                color: 'rgba(250, 219, 20, 0.1)'
+                                                            },
                                                             ticks: {
+                                                                color: '#f39c12',
                                                                 callback: (value) => `${value.toLocaleString('vnd', { style: 'currency', currency: 'VND' })}`
+                                                            }
+                                                        },
+                                                        x: {
+                                                            grid: {
+                                                                color: 'rgba(250, 219, 20, 0.1)'
+                                                            },
+                                                            ticks: {
+                                                                color: '#f39c12'
                                                             }
                                                         }
                                                     }
@@ -546,8 +754,12 @@ const Dashboard = () => {
                                                         {
                                                             label: 'Orders',
                                                             data: orderCountByPeriod.map(item => item.value),
-                                                            fill: false,
-                                                            borderColor: '#1890ff',
+                                                            fill: true,
+                                                            backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                                                            borderColor: '#e67e22',
+                                                            pointBackgroundColor: '#f39c12',
+                                                            pointBorderColor: '#ffffff',
+                                                            pointBorderWidth: 2,
                                                             tension: 0.4
                                                         }
                                                     ]
@@ -557,6 +769,12 @@ const Dashboard = () => {
                                                     plugins: {
                                                         legend: {
                                                             position: 'top',
+                                                            labels: {
+                                                                color: '#e67e22',
+                                                                font: {
+                                                                    weight: 'bold'
+                                                                }
+                                                            }
                                                         },
                                                         title: {
                                                             display: false
@@ -565,8 +783,20 @@ const Dashboard = () => {
                                                     scales: {
                                                         y: {
                                                             beginAtZero: true,
+                                                            grid: {
+                                                                color: 'rgba(230, 126, 34, 0.1)'
+                                                            },
                                                             ticks: {
+                                                                color: '#e67e22',
                                                                 callback: (value) => value.toLocaleString()
+                                                            }
+                                                        },
+                                                        x: {
+                                                            grid: {
+                                                                color: 'rgba(230, 126, 34, 0.1)'
+                                                            },
+                                                            ticks: {
+                                                                color: '#e67e22'
                                                             }
                                                         }
                                                     }
@@ -633,16 +863,30 @@ const Dashboard = () => {
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                 <Col xs={24} lg={12}>
                     <Card 
-                        title="Promotion Effectiveness" 
+                        title={
+                            <Space>
+                                <FireOutlined style={{ color: '#f39c12' }} />
+                                <span style={{ color: '#f39c12', fontWeight: 'bold' }}>Promotion Effectiveness</span>
+                            </Space>
+                        }
                         extra={
                             <Button 
                                 icon={<ReloadOutlined />} 
                                 size="small"
+                                style={{
+                                    borderColor: '#fadb14',
+                                    color: '#f39c12'
+                                }}
                                 onClick={fetchPromotionStatistics}
                             >
                                 Refresh
                             </Button>
                         }
+                        style={{
+                            borderRadius: '12px',
+                            border: '1px solid rgba(250, 219, 20, 0.3)',
+                            boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)'
+                        }}
                     >
                         {loadingPromotionStats ? (
                             <div style={{ height: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -655,20 +899,41 @@ const Dashboard = () => {
                         ) : (
                             <Row gutter={[12, 12]}>
                                 <Col xs={24} sm={12}>
-                                    <Card>
+                                    <Card style={{
+                                        background: 'linear-gradient(135deg, rgba(250, 219, 20, 0.1) 0%, rgba(243, 156, 18, 0.1) 100%)',
+                                        border: '1px solid rgba(250, 219, 20, 0.3)',
+                                        borderRadius: '8px'
+                                    }}>
                                         <Statistic 
-                                            title="Total Items Sold" 
-                                            value={promotionStats.reduce((sum, item) => sum + (item.items || 0), 0)} 
+                                            title={
+                                                <Space>
+                                                    <StarOutlined style={{ color: '#f39c12' }} />
+                                                    <span style={{ color: '#8c8c8c' }}>Total Items Sold</span>
+                                                </Space>
+                                            }
+                                            value={promotionStats.reduce((sum, item) => sum + (item.items || 0), 0)}
+                                            valueStyle={{ color: '#f39c12', fontWeight: 'bold' }}
                                         />
                                     </Card>
-                                </Col>                                            <Col xs={24} sm={12}>
-                                    <Card>
+                                </Col>
+                                <Col xs={24} sm={12}>
+                                    <Card style={{
+                                        background: 'linear-gradient(135deg, rgba(230, 126, 34, 0.1) 0%, rgba(214, 137, 16, 0.1) 100%)',
+                                        border: '1px solid rgba(230, 126, 34, 0.3)',
+                                        borderRadius: '8px'
+                                    }}>
                                         <Statistic 
-                                            title="Total Discount Amount" 
+                                            title={
+                                                <Space>
+                                                    <DollarOutlined style={{ color: '#e67e22' }} />
+                                                    <span style={{ color: '#8c8c8c' }}>Total Discount Amount</span>
+                                                </Space>
+                                            }
                                             value={promotionStats.reduce((sum, item) => sum + (item.discountAmount || 0), 0)} 
                                             prefix={<DollarOutlined />}
                                             precision={2}
                                             formatter={(value) => value.toLocaleString('vnd', { style: 'currency', currency: 'VND' })}
+                                            valueStyle={{ color: '#e67e22', fontWeight: 'bold' }}
                                         />
                                     </Card>
                                 </Col>                                            <Col span={24}>
@@ -730,7 +995,20 @@ const Dashboard = () => {
                     </Card>
                 </Col>
                 <Col xs={24} lg={12}>
-                    <Card title="Proportion of Order Status" style={{ height: '100%' }}>
+                    <Card 
+                        title={
+                            <Space>
+                                <RiseOutlined style={{ color: '#f39c12' }} />
+                                <span style={{ color: '#f39c12', fontWeight: 'bold' }}>Proportion of Order Status</span>
+                            </Space>
+                        }
+                        style={{ 
+                            height: '100%',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(250, 219, 20, 0.3)',
+                            boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)'
+                        }}
+                    >
                        
                         <Row gutter={[12, 12]} style={{ alignItems: 'center', justifyContent: 'center' }}>
                             {loadingOrderStatus ? (
@@ -771,12 +1049,20 @@ const Dashboard = () => {
                                         datasets: [{
                                             data: orderStatusPercentage.map(item => item.value),
                                             backgroundColor: [
-                                                '#FF6384',
-                                                '#36A2EB',
-                                                '#FFCE56',
-                                                '#4BC0C0',
-                                                '#9966FF'
-                                            ]
+                                                '#fadb14',
+                                                '#f39c12',
+                                                '#e67e22',
+                                                '#d68910',
+                                                '#f1c40f'
+                                            ],
+                                            borderColor: [
+                                                '#ffffff',
+                                                '#ffffff',
+                                                '#ffffff',
+                                                '#ffffff',
+                                                '#ffffff'
+                                            ],
+                                            borderWidth: 2
                                         }]
                                     }}
                                     style={{ height: '80%' }}
@@ -788,7 +1074,19 @@ const Dashboard = () => {
             </Row>
             <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                 <Col xs={24}>
-                    <Card title="Inventory Management">
+                    <Card 
+                        title={
+                            <Space>
+                                <ShoppingOutlined style={{ color: '#f39c12' }} />
+                                <span style={{ color: '#f39c12', fontWeight: 'bold' }}>Inventory Management</span>
+                            </Space>
+                        }
+                        style={{
+                            borderRadius: '12px',
+                            border: '1px solid rgba(250, 219, 20, 0.3)',
+                            boxShadow: '0 4px 16px rgba(250, 219, 20, 0.1)'
+                        }}
+                    >
                         {loadingCategoriesStock ? (
                             <div style={{ height: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                 <Typography.Text>Loading inventory data...</Typography.Text>
@@ -830,7 +1128,11 @@ const Dashboard = () => {
                                                         datasets: [{
                                                             label: 'Stock Amount',
                                                             data: category.subCategories.map(item => item.stockAmount),
-                                                            backgroundColor: '#1890ff'
+                                                            backgroundColor: 'rgba(250, 219, 20, 0.7)',
+                                                            borderColor: '#fadb14',
+                                                            borderWidth: 2,
+                                                            borderRadius: 4,
+                                                            borderSkipped: false,
                                                         }]
                                                     }}
                                                     options={{
@@ -838,10 +1140,21 @@ const Dashboard = () => {
                                                         plugins: {
                                                             legend: {
                                                                 position: 'top',
+                                                                labels: {
+                                                                    color: '#f39c12',
+                                                                    font: {
+                                                                        weight: 'bold'
+                                                                    }
+                                                                }
                                                             },
                                                             title: {
                                                                 display: true,
-                                                                text: `${category.name} Stock Distribution by Subcategory`
+                                                                text: `${category.name} Stock Distribution by Subcategory`,
+                                                                color: '#f39c12',
+                                                                font: {
+                                                                    size: 16,
+                                                                    weight: 'bold'
+                                                                }
                                                             },
                                                             tooltip: {
                                                                 callbacks: {
@@ -855,6 +1168,25 @@ const Dashboard = () => {
                                                                         }
                                                                         return label;
                                                                     }
+                                                                }
+                                                            }
+                                                        },
+                                                        scales: {
+                                                            y: {
+                                                                beginAtZero: true,
+                                                                grid: {
+                                                                    color: 'rgba(250, 219, 20, 0.1)'
+                                                                },
+                                                                ticks: {
+                                                                    color: '#f39c12'
+                                                                }
+                                                            },
+                                                            x: {
+                                                                grid: {
+                                                                    color: 'rgba(250, 219, 20, 0.1)'
+                                                                },
+                                                                ticks: {
+                                                                    color: '#f39c12'
                                                                 }
                                                             }
                                                         }
