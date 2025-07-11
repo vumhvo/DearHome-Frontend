@@ -12,7 +12,9 @@ export const authApiRequest = {
   resetPassword: (data) => apiInstance.post('/User/reset-password', data),
   sendVerificationCode: (email) => apiInstance.post('/User/send-verification-code', { email }),
   getUser: (id) => apiInstance.get(`/User/${id}`),
+  getMe: () => apiInstance.get('/User/me'),
   updateUser: (data) => apiInstance.put(`/User`, data),
+  changePassword: (data) => apiInstance.put('/User/change-password', data),
   logoutUser: (token) => apiInstance.post('/User/logout', token),
 };
 
@@ -99,11 +101,6 @@ export const bannerApiRequest = {
   createBanner: (data) => apiInstance.post('/banners', data),
   updateBanner: (id, data) => apiInstance.put(`/banners/${id}`, data),
   deleteBanner: (id) => apiInstance.delete(`/banners/${id}`),
-};
-
-// Design generation endpoints
-export const designApiRequest = {
-  generateDesign: (prompt) => apiInstance.post('/design/generate', { prompt }),
 };
 
 // Cart endpoints

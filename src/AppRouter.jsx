@@ -8,7 +8,6 @@ import Products from './pages/customer/Products';
 import CategoryDetails from './pages/customer/CategoryDetails';
 import Cart from './pages/customer/Cart';
 import Checkout from './pages/customer/Checkout';
-import CustomerProfile from './pages/customer/CustomerProfile';
 import { URLS } from './constants/urls';
 import AdminLayout from './layouts/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -103,7 +102,7 @@ const AppRouter = () => {
             <Route path='product/:id' element={<ProductDetails />} />
             <Route path='cart' element={<Cart />} />
             <Route path='checkout' element={<Checkout />} />
-            <Route path='profile' element={<CustomerProfile />} />
+            <Route path='profile' element={<UserProfile />} />
             <Route path='category/:slug' element={<CategoryDetails />} />
             <Route path='category/:parentSlug/:slug' element={<CategoryDetails />} />
             <Route path='order-tracking' element={<OrderTracking />} />

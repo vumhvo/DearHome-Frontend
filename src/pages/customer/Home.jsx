@@ -117,7 +117,7 @@ const Home = () => {
                                         {categories?.slice(0, 4).map((category) => (
                                             <Col key={category.id} xs={12} sm={12} md={8} lg={8} xl={8}>
                                                 <CategoryCard image={category.imageUrl}
-                                                    title={category.name} />
+                                                    title={category.name} slug={category.slug} />
                                             </Col>
                                         ))}
                                     </Row>
@@ -172,6 +172,7 @@ const Home = () => {
                                                 <CategoryCard 
                                                     image={category.imageUrl}
                                                     title={category.name}
+                                                    slug={category.slug}
                                                 />
                                             </Col>
                                         ))}

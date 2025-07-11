@@ -21,7 +21,9 @@ const AdminLayout = () => {
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
 
-  const avatar = user?.certthumbprint ? user.certthumbprint : "https://cdn1.iconfinder.com/data/icons/user-pictures/100/male3-512.png";
+  const avatar = user?.imageUrl ? user.imageUrl : "https://cdn1.iconfinder.com/data/icons/user-pictures/100/male3-512.png";
+
+  console.log("AdminLayout user", user);
 
   // Check if the screen is mobile size
   useEffect(() => {

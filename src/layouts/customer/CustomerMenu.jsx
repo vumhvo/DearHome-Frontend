@@ -20,22 +20,22 @@ const CustomerMenu = () => {
       navigate(URLS.CUSTOMER.PRODUCTS);
       setMobileMenuVisible(false);
     }},
-    { key: 'about', label: 'ABOUT US', onClick: () => {
-      navigate(URLS.CUSTOMER.ABOUT);
-      setMobileMenuVisible(false);
-    }},
-    { key: 'contact', label: 'CONTACT', onClick: () => {
-      navigate(URLS.CUSTOMER.CONTACT);
-      setMobileMenuVisible(false);
-    }},
+    // { key: 'about', label: 'ABOUT US', onClick: () => {
+    //   navigate(URLS.CUSTOMER.ABOUT);
+    //   setMobileMenuVisible(false);
+    // }},
+    // { key: 'contact', label: 'CONTACT', onClick: () => {
+    //   navigate(URLS.CUSTOMER.CONTACT);
+    //   setMobileMenuVisible(false);
+    // }},
     { key: 'order-tracking', label: 'ORDER TRACKING', onClick: () => {
       navigate(URLS.CUSTOMER.ORDER_TRACKING);
       setMobileMenuVisible(false);
     }},
-    { key: 'vr-placement', label: 'VR PLACEMENT', onClick: () => {
-      navigate(URLS.CUSTOMER.VR_PLACEMENT);
-      setMobileMenuVisible(false);
-    }},
+    // { key: 'vr-placement', label: 'VR PLACEMENT', onClick: () => {
+    //   navigate(URLS.CUSTOMER.VR_PLACEMENT);
+    //   setMobileMenuVisible(false);
+    // }},
   ];
 
   // Get current selected key based on path

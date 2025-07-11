@@ -8,7 +8,7 @@ const VRPlacement = () => {
   return (
     <>
       <ARScene 
-        modelUrl={modelUrl || 'Shapes/20250621_084921_DEMO.glb'} // Default model if none provided
+        modelUrl={modelUrl || 'Shapes/20250621_160331_shape.glb'} // Default model if none provided
         productName={productName || 'Default Product'}
         variantId={variantId || 'default-variant'}
         enterAR={true}
