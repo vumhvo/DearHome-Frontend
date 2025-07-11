@@ -1,31 +1,27 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Typography, Row, Col, Image, Button, Card, Flex, InputNumber, Tabs, Select, Rate, Progress, Pagination, Skeleton, Radio, Empty, Avatar, Switch } from 'antd';
-import { ShoppingCartOutlined, HeartOutlined, HeartFilled, UpOutlined, DownOutlined, PlusOutlined, MinusOutlined, StarFilled, DeleteOutlined, EyeOutlined, CameraOutlined } from '@ant-design/icons';
+import { ShoppingCartOutlined, HeartOutlined, HeartFilled, UpOutlined, DownOutlined, PlusOutlined, MinusOutlined, StarFilled, DeleteOutlined, EyeOutlined, CameraOutlined, MobileOutlined } from '@ant-design/icons';
 import { useMediaQuery } from 'react-responsive';
 import { ProductApiRequest, reviewApiRequest } from '../../api/ApiRequests';
 import AttributeTypes from '../../constants/AttributeTypes'
 import { addToCart, updateQuantity, removeFromCart } from '../../store/actions/CartAction';
 import { useDispatch, useSelector } from 'react-redux';
 import ModelView from '../../components/ModelView';
+import { URLS } from '../../constants/urls';
 const { Title, Text, Paragraph } = Typography;
 
 const ProductDetails = () => {
     const { id } = useParams();
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [product, setProduct] = useState();
-    const [selectedTab, setSelectedTab] = useState('1');
     const [isFavorite, setIsFavorite] = useState(false);
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [selectedAttributes, setSelectedAttributes] = useState({});
     const [mainImage, setMainImage] = useState('');
     const [show3DModel, setShow3DModel] = useState(false);
-    const [modelColor, setModelColor] = useState('#ffffff');
-    const [modelMaterial, setModelMaterial] = useState({ 
-        roughness: 0.5, 
-        metalness: 0.5 
-    });
 
     const isMobile = useMediaQuery({ maxWidth: 768 });
 
@@ -56,17 +52,6 @@ const ProductDetails = () => {
                     res.data.variants.$values[0].variantAttributes.$values) {
                     res.data.variants.$values[0].variantAttributes.$values.forEach(attr => {
                         initialAttributes[attr.attributeValue.attributeId] = attr.attributeValue.value;
-                        
-                        // If this is a color attribute, set the model color
-                        const isColorAttr = res.data.category?.categoryAttributes?.$values?.find(
-                            catAttr => catAttr.attributeId === attr.attributeValue.attributeId && 
-                                      catAttr.attribute.type === AttributeTypes.Color
-                        );
-                        
-                        if (isColorAttr) {
-                            setModelColor(attr.attributeValue.value);
-                            console.log('Initialize model color:', attr.attributeValue.value);
-                        }
                     });
                 }
                 setSelectedAttributes(initialAttributes);
@@ -97,15 +82,6 @@ const ProductDetails = () => {
     useEffect(() => {
         fetchProduct();
     }, [id]);
-
-    // Synchronize model color with selected color attribute
-    useEffect(() => {
-        if (!product) return;
-        
-        const currentColor = getSelectedColor();
-        setModelColor(currentColor);
-        console.log('Updated model color from selectedAttributes:', currentColor);
-    }, [selectedAttributes, product]);
 
     // Handle reviews pagination change
     const handleReviewPageChange = (page) => {
@@ -204,11 +180,6 @@ const ProductDetails = () => {
         const isColorAttribute = product?.category?.categoryAttributes?.$values?.find(
             attr => attr.attributeId === attributeId && attr.attribute.type === AttributeTypes.Color
         );
-        
-        if (isColorAttribute) {
-            setModelColor(value);
-            console.log('Updated model color to:', value);
-        }
 
         // Find and update the selected variant based on the new attribute selection
         if (product && product.variants && product.variants.$values) {
@@ -249,13 +220,18 @@ const ProductDetails = () => {
     };
 
     const toggleViewMode = () => {
-        // When toggling to 3D model view, make sure the color is set from selected attributes
-        if (!show3DModel) {
-            const currentColor = getSelectedColor();
-            setModelColor(currentColor);
-        }
-        
         setShow3DModel(!show3DModel);
+    };
+
+    const navigateToAR = () => {
+        if (selectedVariant?.modelUrl) {
+            navigate(URLS.CUSTOMER.VR_PLACEMENT, {
+                state: { 
+                    modelUrl: selectedVariant.modelUrl,
+                    productName: product.name,
+                }
+            });
+        }
     };
 
     if (product === undefined) {
@@ -274,12 +250,29 @@ const ProductDetails = () => {
                                 {
                                     show3DModel ? (
                                         <div style={{ width: '100%', height: '400px', position: 'relative' }}>
-                                            <ModelView
-                                                modelPath={product.modelUrl}
-                                                color={modelColor}
-                                                material={modelMaterial}
-                                                key={`modelview-${modelColor}`} // Force re-render when color changes
-                                            />
+                                            {selectedVariant?.modelUrl ? (
+                                                <ModelView
+                                                    modelPath={selectedVariant.modelUrl}
+                                                    key={`modelview`}
+                                                />
+                                            ) : (
+                                                <Flex 
+                                                    vertical 
+                                                    align="center" 
+                                                    justify="center" 
+                                                    style={{ 
+                                                        height: '100%', 
+                                                        backgroundColor: '#f5f5f5',
+                                                        borderRadius: '8px',
+                                                        padding: '20px'
+                                                    }}
+                                                >
+                                                    <CameraOutlined style={{ fontSize: '48px', color: '#bfbfbf', marginBottom: '16px' }} />
+                                                    <Text style={{ color: '#8c8c8c', textAlign: 'center' }}>
+                                                        3D model is not available for this variant
+                                                    </Text>
+                                                </Flex>
+                                            )}
                                         </div>
                                     ) : <Image
                                         src={mainImage}
@@ -287,14 +280,27 @@ const ProductDetails = () => {
                                         style={{ width: '100%', objectFit: 'cover' }}
                                     />
                                 }
-                                <Button
-                                    type={show3DModel ? 'primary' : 'default'}
-                                    icon={show3DModel ? <EyeOutlined /> : <CameraOutlined />}
-                                    style={{ position: 'absolute', top: 16, right: 16, zIndex: 1 }}
-                                    onClick={toggleViewMode}
-                                >
-                                    {show3DModel ? 'View Image' : 'View 3D Model'}
-                                </Button>
+                                <Flex gap={8} style={{ position: 'absolute', top: 16, right: 16, zIndex: 1 }}>
+                                    <Button
+                                        type={show3DModel ? 'primary' : 'default'}
+                                        icon={show3DModel ? <EyeOutlined /> : <CameraOutlined />}
+                                        style={{ 
+                                            opacity: selectedVariant?.modelUrl ? 1 : 0.5
+                                        }}
+                                        onClick={toggleViewMode}
+                                        disabled={!selectedVariant?.modelUrl}
+                                    >
+                                        {show3DModel ? 'View Image' : 'View 3D'}
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        icon={<MobileOutlined />}
+                                        onClick={navigateToAR}
+                                        disabled={!selectedVariant?.modelUrl}
+                                    >
+                                        Try in AR
+                                    </Button>
+                                </Flex>
                             </Col>
                             {
                                 !show3DModel && (
@@ -417,35 +423,35 @@ const ProductDetails = () => {
                                     <Flex key={catAttr.attributeId} gap={16} align="center">
                                         <Typography.Text>{catAttr.attribute.name || 'Attribute'}:</Typography.Text>
 
-                                        {catAttr.attribute.type === AttributeTypes.Color && possibleValues.length > 1 ? (
-                                            <Radio.Group
-                                                value={selectedAttributes[catAttr.attributeId] || possibleValues[0]}
-                                                onChange={(e) => handleAttributeChange(catAttr.attributeId, e.target.value)}
-                                                buttonStyle="solid"
-                                            >
-                                                <Flex gap={8}>
-                                                    {possibleValues.map((option) => (
-                                                        <Radio.Button
-                                                            key={option}
-                                                            value={option}
-                                                            style={{
-                                                                padding: 0,
-                                                                height: '30px',
-                                                                width: '30px',
+                                        {catAttr.attribute.type === AttributeTypes.Color ? (
+                                            <Flex gap={8}>
+                                                {possibleValues.map((option) => (
+                                                    <div 
+                                                        key={option}
+                                                        onClick={() => possibleValues.length > 1 && handleAttributeChange(catAttr.attributeId, option)}
+                                                        style={{
+                                                            width: '30px',
+                                                            height: '30px',
+                                                            borderRadius: '50%',
+                                                            background: option,
+                                                            border: selectedAttributes[catAttr.attributeId] === option ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                                                            cursor: possibleValues.length > 1 ? 'pointer' : 'default',
+                                                            position: 'relative',
+                                                            overflow: 'hidden'
+                                                    }}
+                                                    >
+                                                        {selectedAttributes[catAttr.attributeId] === option && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                inset: '0',
+                                                                border: '2px solid white',
                                                                 borderRadius: '50%',
-                                                                overflow: 'hidden',
-                                                                background: option,
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                border: selectedAttributes[catAttr.attributeId] === option ? '2px solid #1890ff' : '1px solid #d9d9d9'
-                                                            }}
-                                                        >
-                                                            <div style={{ opacity: 0 }}>.</div>
-                                                        </Radio.Button>
-                                                    ))}
-                                                </Flex>
-                                            </Radio.Group>
+                                                                margin: '2px'
+                                                            }} />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </Flex>
                                         ) : possibleValues.length > 1 ? (
                                             <Select
                                                 value={selectedAttributes[catAttr.attributeId] || possibleValues[0]}
@@ -458,19 +464,7 @@ const ProductDetails = () => {
                                                 ))}
                                             </Select>
                                         ) : (
-                                            <Typography.Text>
-                                                {catAttr.attribute.type === AttributeTypes.Color ? (
-                                                    <div style={{
-                                                        backgroundColor: possibleValues[0],
-                                                        width: '20px',
-                                                        height: '20px',
-                                                        display: 'inline-block',
-                                                        marginRight: '8px',
-                                                        verticalAlign: 'middle'
-                                                    }}></div>
-                                                ) : null}
-                                                {possibleValues[0] || 'N/A'}
-                                            </Typography.Text>
+                                            <Typography.Text>{possibleValues[0] || 'N/A'}</Typography.Text>
                                         )}
                                     </Flex>
                                 );

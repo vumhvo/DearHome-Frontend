@@ -40,3 +40,106 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Promotions Page Styles */
+.ant-table-thead > tr > th {
+  background: linear-gradient(135deg, #fff9e6, #fefefe) !important;
+  border-bottom: 2px solid #faad14 !important;
+  font-weight: 600;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: rgba(250, 173, 20, 0.05) !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(250, 173, 20, 0.1) !important;
+}
+
+.ant-select-focused .ant-select-selector,
+.ant-input-affix-wrapper:focus,
+.ant-input:focus {
+  border-color: #faad14 !important;
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.2) !important;
+}
+
+.ant-pagination .ant-pagination-item-active {
+  background: #faad14 !important;
+  border-color: #faad14 !important;
+}
+
+.ant-pagination .ant-pagination-item-active a {
+  color: white !important;
+}
+
+.ant-tag-gold {
+  background: linear-gradient(135deg, #faad14, #ffd53e);
+  border: none;
+  color: white;
+  font-weight: 500;
+}
+
+/* Sort button hover effects */
+.ant-btn-text:hover {
+  background: rgba(250, 173, 20, 0.1) !important;
+  color: #faad14 !important;
+}
+
+/* Modal enhancements */
+.ant-modal-header {
+  border-bottom: 2px solid rgba(250, 173, 20, 0.2) !important;
+}
+
+.ant-form-item-label > label {
+  font-weight: 600;
+  color: #333;
+}
+
+/* Search input enhancement */
+.ant-input-search .ant-input-group .ant-input-affix-wrapper {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ant-input-search .ant-btn {
+  background: linear-gradient(135deg, #faad14, #ffd53e);
+  border-color: #faad14;
+}
+
+.ant-input-search .ant-btn:hover {
+  background: linear-gradient(135deg, #e89611, #faad14) !important;
+  border-color: #e89611 !important;
+}
+
+/* Order Management Page Styles */
+.order-management .ant-descriptions-item-label {
+  font-weight: 600;
+  color: #faad14;
+}
+
+.order-management .ant-badge-status-dot {
+  border-color: #faad14;
+}
+
+.order-management .ant-table-summary-row {
+  background: rgba(250, 173, 20, 0.05);
+}
+
+.order-management .ant-table-summary-cell {
+  border-top: 2px solid #faad14;
+}
+
+/* Dropdown menu enhancement */
+.ant-dropdown-menu-item:hover {
+  background: rgba(250, 173, 20, 0.1);
+}
+
+.ant-dropdown-menu-item-icon {
+  color: #faad14;
+}
+
+/* Status tags enhancement */
+.ant-tag {
+  border-radius: 6px;
+  font-weight: 500;
+}

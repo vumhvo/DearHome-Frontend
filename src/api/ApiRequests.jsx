@@ -12,7 +12,9 @@ export const authApiRequest = {
   resetPassword: (data) => apiInstance.post('/User/reset-password', data),
   sendVerificationCode: (email) => apiInstance.post('/User/send-verification-code', { email }),
   getUser: (id) => apiInstance.get(`/User/${id}`),
+  getMe: () => apiInstance.get('/User/me'),
   updateUser: (data) => apiInstance.put(`/User`, data),
+  changePassword: (data) => apiInstance.put('/User/change-password', data),
   logoutUser: (token) => apiInstance.post('/User/logout', token),
 };
 
@@ -55,14 +57,17 @@ export const inventoryApiRequest = {
 
 // Order endpoints
 export const orderApiRequest = {
-  getAllOrders: (pageNumber, pageSize, search) => apiInstance.get(`/Order?offSet=${pageNumber}&limit=${pageSize}&searchString=${encodeURIComponent(search)}`),
+  getAllOrders: (offSet, limit, search, filter = '', sortBy = '', isDescending = false) =>
+    apiInstance.get(`/Order?offSet=${offSet}&limit=${limit}&searchString=${encodeURIComponent(search)}&filter=${encodeURIComponent(filter)}&sortBy=${sortBy}&isDescending=${isDescending}`),
   getOrderById: (id) => apiInstance.get(`/Order/${id}`),
-  getOrdersByUserId: (userId, offSet, limit) => apiInstance.get(`/Order/user/${userId}?offSet=${offSet}&limit=${limit}`),
-  getOrdersByUserIdAndStatus: (userId, status, offSet, limit) => apiInstance.get(`/Order/user-and-status/${userId}?status=${status}&offSet=${offSet}&limit=${limit}`),
+  getOrdersByUserId: (userId, offSet, limit, filter = '', sortBy = '', isDescending = false) =>
+    apiInstance.get(`/Order/user/${userId}?offSet=${offSet}&limit=${limit}&filter=${encodeURIComponent(filter)}&sortBy=${sortBy}&isDescending=${isDescending}`),
+  getOrdersByUserIdAndStatus: (userId, status, offSet, limit, filter = '', sortBy = '', isDescending = false) =>
+    apiInstance.get(`/Order/user-and-status/${userId}?status=${status}&offSet=${offSet}&limit=${limit}&filter=${encodeURIComponent(filter)}&sortBy=${sortBy}&isDescending=${isDescending}`),
   createOrder: (data, returnUrl) => {
     return apiInstance.post(`/Order/create?returnUrl=${returnUrl}`, data);
   },
-  updateOrderStatus: (id, status) => apiInstance.put(`/Order/update-status/${id}`,  status),
+  updateOrderStatus: (id, status) => apiInstance.put(`/Order/update-status/${id}`, status),
 };
 
 // Product attribute endpoints
@@ -75,10 +80,12 @@ export const attributeApiRequest = {
 
 // Promotion endpoints
 export const promotionApiRequest = {
-  getAllPromotions: ({ page = 1, pageSize = 10, search = '' } = {}) => {
+  getAllPromotions: ({ page = 1, pageSize = 10, search = '', filter = '', sortBy = '', isDescending = false } = {}) => {
     const offset = (page - 1) * pageSize;
     let url = `/Promotion?offset=${offset}&limit=${pageSize}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (filter) url += `&filter=${encodeURIComponent(filter)}`;
+    if (sortBy) url += `&sortBy=${sortBy}&isDescending=${isDescending}`;
     return apiInstance.get(url);
   },
   getPromotionById: (id) => apiInstance.get(`/promotion/${id}`),
@@ -94,11 +101,6 @@ export const bannerApiRequest = {
   createBanner: (data) => apiInstance.post('/banners', data),
   updateBanner: (id, data) => apiInstance.put(`/banners/${id}`, data),
   deleteBanner: (id) => apiInstance.delete(`/banners/${id}`),
-};
-
-// Design generation endpoints
-export const designApiRequest = {
-  generateDesign: (prompt) => apiInstance.post('/design/generate', { prompt }),
 };
 
 // Cart endpoints
@@ -158,7 +160,8 @@ export const PlacementApiRequest = {
 };
 
 export const ProductApiRequest = {
-  getAllProducts: (offSet = 0, limit = 10) => apiInstance.get(`/Product?offSet=${offSet}&limit=${limit}`),
+  getAllProducts: (offSet = 0, limit = 10, searchString = '', filter = '', sortBy = '', isDescending = false) =>
+    apiInstance.get(`/Product?offSet=${offSet}&limit=${limit}&searchString=${encodeURIComponent(searchString)}&filter=${encodeURIComponent(filter)}&sortBy=${sortBy}&isDescending=${isDescending}`),
   getTopSaleProducts: (count) => apiInstance.get(`/Product/top-sales?count=${count}`),
   getProductsByCategoryId: (id, offSet = 0, limit = 10) => apiInstance.get(`/Product/get-by-category/${id}?offSet=${offSet}&limit=${limit}`),
   getProductById: (id) => apiInstance.get(`/Product/${id}`),
@@ -222,7 +225,7 @@ export const virtualRoomApiRequest = {
 export const chatbotWs = {
   connectWebSocket: () => {
     const ws = chatbotWsInstance.connectWebSocket();
-    
+
     return ws;
   }
 }

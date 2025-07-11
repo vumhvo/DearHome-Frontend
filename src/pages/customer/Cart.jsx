@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Typography, Row, Col, Button, InputNumber, Empty, Flex, Image, Table, Form, Input, Breadcrumb } from 'antd';
-import { DeleteOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons';
+import { Typography, Row, Col, Button, InputNumber, Empty, Flex, Image, Table, Form, Input, Breadcrumb, Card } from 'antd';
+import { DeleteOutlined, MinusOutlined, PlusOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { URLS } from '../../constants/urls';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCart, updateQuantity } from '../../store/actions/CartAction';
 import { useNavigate } from 'react-router-dom';
+import { useMediaQuery } from 'react-responsive';
 const { TextArea } = Input;
 
 const Cart = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const cartItems = useSelector(state => state.cart.items);
+    const isMobile = useMediaQuery({ maxWidth: 768 });
     
     const formatPrice = (price) => {
         return (price).toLocaleString('vi-VN');
@@ -69,17 +71,63 @@ const Cart = () => {
             render: (text, record) => {
                 const imageUrl = record.item.imageUrls?.$values?.[0] || record.item.product.imageUrl;
                 return (
-                    <Flex gap={16} align="start" wrap="wrap">
-                        <Image src={imageUrl} width={100} height={100} style={{objectFit: 'cover'}} />
-                        <Flex vertical justify="start" gap={8} style={{flex: 1, minWidth: 200}}>
-                            <Typography.Text style={{fontSize: 16, fontWeight: 500}}>{text?.toUpperCase()}</Typography.Text>
+                    <Flex gap={16} align="start">
+                        <Image 
+                            src={imageUrl} 
+                            width={isMobile ? 80 : 100} 
+                            height={isMobile ? 80 : 100} 
+                            style={{
+                                objectFit: 'cover',
+                                borderRadius: '8px'
+                            }} 
+                        />
+                        <Flex vertical justify="start" gap={8} style={{flex: 1, minWidth: isMobile ? 'auto' : 200}}>
+                            <Typography.Text 
+                                style={{
+                                    fontSize: isMobile ? 14 : 16, 
+                                    fontWeight: 500
+                                }}
+                            >
+                                {text?.toUpperCase()}
+                            </Typography.Text>
                             {renderVariantAttributes(record)}
-                            <Typography.Text type="secondary">SKU: {record.item.sku}</Typography.Text>
+                            <Typography.Text type="secondary" style={{fontSize: isMobile ? 12 : 14}}>
+                                SKU: {record.item.sku}
+                            </Typography.Text>
+                            {isMobile && (
+                                <Flex vertical gap={8}>
+                                    <Typography.Text strong>
+                                        {formatPrice(record.item.product.price + record.item.selectedVariant.priceAdjustment)}₫
+                                    </Typography.Text>
+                                    <Flex gap={2} align="center">
+                                        <Button 
+                                            size="small"
+                                            icon={<MinusOutlined />} 
+                                            onClick={() => handleQuantityChange(record.item, Math.max(1, record.quantity - 1))}
+                                            disabled={record.quantity <= 1}
+                                        />
+                                        <InputNumber 
+                                            size="small"
+                                            value={record.quantity}
+                                            min={1}
+                                            max={record.item.stock}
+                                            style={{width: 50}}
+                                            onChange={(value) => handleQuantityChange(record.item, value)}
+                                        />
+                                        <Button 
+                                            size="small"
+                                            icon={<PlusOutlined />} 
+                                            onClick={() => handleQuantityChange(record.item, record.quantity + 1)}
+                                            disabled={record.quantity >= record.item.stock}
+                                        />
+                                    </Flex>
+                                </Flex>
+                            )}
                         </Flex>
                     </Flex>
                 );
             },
-            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
+            width: isMobile ? '100%' : '40%'
         },
         {
             title: 'Price',
@@ -116,7 +164,7 @@ const Cart = () => {
                     />
                 </Flex>
             ),
-            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
+            responsive: ['sm', 'md', 'lg', 'xl']
         },
         {
             title: 'Total',
@@ -125,28 +173,27 @@ const Cart = () => {
             render: (text, record) => {
                 const unitPrice = record.item.product.price + record.item.selectedVariant.priceAdjustment;
                 const total = unitPrice * record.quantity;
-                console.log(record)
                 return <Typography.Text strong>{formatPrice(total)}₫</Typography.Text>;
             },
             responsive: ['sm', 'md', 'lg', 'xl']
         },
         {
-            title: 'Action',
+            title: '',
             key: 'action',
             render: (_, record) => (
                 <Button 
                     danger
+                    type="text"
                     icon={<DeleteOutlined />} 
                     onClick={() => handleRemoveItem(record.item.selectedVariant.id)}
                 />
             ),
-            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
+            width: 60
         }
     ];
 
     const handleQuantityChange = (item, value) => {
         if (value && value > 0) {
-            console.log(item)
             dispatch(updateQuantity({ 
                 item: item, 
                 quantity: value 
@@ -172,7 +219,14 @@ const Cart = () => {
     if (!cartItems || cartItems.length === 0) {
         return (
             <Flex vertical align="center" justify="center" style={{ minHeight: '60vh' }}>
-                <Empty description="Your cart is empty" />
+                <Empty 
+                    image={<ShoppingOutlined style={{ fontSize: 48 }} />}
+                    description={
+                        <Typography.Text style={{ fontSize: 16 }}>
+                            Your cart is empty
+                        </Typography.Text>
+                    }
+                />
                 <Button type="primary" style={{ marginTop: 16 }} href={URLS.CUSTOMER.HOME}>
                     Continue Shopping
                 </Button>
@@ -182,45 +236,71 @@ const Cart = () => {
 
     return (
         <Flex vertical gap={32}>
-            <Breadcrumb>
+            <Breadcrumb style={{ marginBottom: isMobile ? 16 : 32 }}>
                 <Breadcrumb.Item href={URLS.CUSTOMER.HOME}>Home</Breadcrumb.Item>
-                <Breadcrumb.Item href={URLS.CUSTOMER.CART}>Cart</Breadcrumb.Item>
+                <Breadcrumb.Item>Cart</Breadcrumb.Item>
             </Breadcrumb>
-            <Typography.Title style={{ textAlign: 'center' }} level={2}>CART</Typography.Title>
             
             <Row gutter={[32, 32]}>
                 <Col xs={24} lg={24}>
-                    <Table 
-                        dataSource={cartItems}
-                        pagination={false}
-                        columns={columns}
-                        scroll={{ x: 'max-content' }}
-                        style={{ overflowX: 'auto' }}
-                        rowKey={record => record.item.id}
-                    />
+                    <Card bordered={false}>
+                        <Table 
+                            dataSource={cartItems}
+                            pagination={false}
+                            columns={isMobile ? columns.filter(col => !col.responsive) : columns}
+                            scroll={{ x: isMobile ? undefined : 'max-content' }}
+                            style={{ 
+                                overflowX: 'auto',
+                                background: 'transparent'
+                            }}
+                            rowKey={record => record.item.id}
+                        />
+                    </Card>
                 </Col>
-                <Col xs={24} lg={12}>
-                    <Form.Item layout='vertical' label="Order Note">
-                        <TextArea rows={4} placeholder='Enter your order note' />
-                    </Form.Item>
-                </Col>
-                    
-                <Col xs={24} lg={12}>
-                    <Flex vertical gap={16} style={{ height: '100%', justifyContent: 'space-between' }}>
-                        <Flex vertical gap={16}>
-                            <Flex justify="space-between">
-                                <Typography.Text>Total Quantity</Typography.Text>
-                                <Typography.Text strong>{calculateTotalQuantity()} items</Typography.Text>
-                            </Flex>
-                            <Flex justify="space-between">
-                                <Typography.Text>Total</Typography.Text>
-                                <Typography.Text strong>{formatPrice(calculateTotal())} ₫</Typography.Text>
+                <Col xs={24} lg={24}>
+                    <Card bordered={false}>
+                        <Flex vertical gap={24}>
+                            <Form.Item 
+                                layout='vertical' 
+                                label={
+                                    <Typography.Text strong>
+                                        Order Note
+                                    </Typography.Text>
+                                }
+                            >
+                                <TextArea 
+                                    rows={4} 
+                                    placeholder='Enter special instructions for your order' 
+                                    style={{ resize: 'none' }}
+                                />
+                            </Form.Item>
+                            
+                            <Flex vertical gap={16}>
+                                <Flex justify="space-between" align="center">
+                                    <Typography.Text>Total Items</Typography.Text>
+                                    <Typography.Text strong>{calculateTotalQuantity()}</Typography.Text>
+                                </Flex>
+                                <Flex justify="space-between" align="center">
+                                    <Typography.Title level={5} style={{ margin: 0 }}>Total</Typography.Title>
+                                    <Typography.Title level={5} style={{ margin: 0 }}>
+                                        {formatPrice(calculateTotal())}₫
+                                    </Typography.Title>
+                                </Flex>
+                                <Button 
+                                    disabled={cartItems.length <= 0} 
+                                    onClick={navigateCheckout} 
+                                    type="primary" 
+                                    size="large"
+                                    style={{
+                                        marginTop: 8,
+                                        height: 48
+                                    }}
+                                >
+                                    Proceed to Checkout
+                                </Button>
                             </Flex>
                         </Flex>
-                        <Button disabled={cartItems.length <= 0} onClick={navigateCheckout} type="primary" block size="large">
-                            Proceed to Checkout
-                        </Button>
-                    </Flex>
+                    </Card>
                 </Col>
             </Row>
         </Flex>

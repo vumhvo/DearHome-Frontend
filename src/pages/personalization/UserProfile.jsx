@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Form, Input, Button, Avatar, Typography, Row, Col, notification, Tabs, Flex, Breadcrumb, Card, Divider, Skeleton, Select, message, Spin, Checkbox } from 'antd';
-import { LockOutlined, PlusOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Avatar, Typography, Row, Col, notification, Tabs, Flex, Breadcrumb, Card, Divider, Skeleton, Select, message, Spin, Checkbox, Upload, Modal, Tooltip } from 'antd';
+import { LockOutlined, PlusOutlined, LogoutOutlined, CameraOutlined, LoadingOutlined } from '@ant-design/icons';
 import { URLS } from '../../constants/urls';
-import { authApiRequest } from '../../api/ApiRequests';
+import { authApiRequest, UploadApiRequest } from '../../api/ApiRequests';
 import { useSelector } from 'react-redux';
 import {shippingApiRequest} from '../../api/ApiRequests';
 import { useDispatch } from 'react-redux';
@@ -20,6 +20,10 @@ const UserProfile = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true); // Loading state
     const [updating, setUpdating] = useState(false); // State for updating profile
+    const [changingPassword, setChangingPassword] = useState(false); // State for changing password
+    const [uploadingAvatar, setUploadingAvatar] = useState(false); // State for uploading avatar
+    const [avatarFileList, setAvatarFileList] = useState([]); // File list for avatar upload
+    const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState(''); // Uploaded avatar URL
     const [cities, setCities] = useState([]);
     const [districtsByAddress, setDistrictsByAddress] = useState([]); // Array of districts for each address
     const [wardsByDistrict, setWardsByDistrict] = useState([]); // Array of wards for each district
@@ -30,9 +34,14 @@ const UserProfile = () => {
     const fetchUser = async () => {
         setLoading(true); // Start loading
         try {
-                const response = await authApiRequest.getUser(userId);
+                const response = await authApiRequest.getMe();
                 setUser(response.data);
                 const userAddresses = response.data.addresses.$values || [];
+                
+                // Set initial avatar file list if user has an image
+                if (response.data.imageUrl) {
+                    setUploadedAvatarUrl(response.data.imageUrl);
+                }
                 
                 setAddresses(userAddresses);
                 setDistrictsByAddress(userAddresses.map(() => [])); // Initialize districts for each address
@@ -135,8 +144,6 @@ const UserProfile = () => {
                     }))
             };
 
-            console.log('Updated User:', updatedUser);
-
             setUpdating(true); // Start updating
             try {
                     await authApiRequest.updateUser(updatedUser);
@@ -200,6 +207,107 @@ const UserProfile = () => {
             }
 
             setAddresses(newAddresses);
+    };
+
+    // Avatar upload functions (based on AddProduct pattern)
+    const handleAvatarFileChange = async ({ fileList }) => {
+        setAvatarFileList(fileList);
+        
+        // If a file was selected, validate and upload it immediately
+        if (fileList.length > 0 && fileList[0].originFileObj) {
+            const file = fileList[0].originFileObj;
+            
+            // Validate file type
+            const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+            if (!isJpgOrPng) {
+                message.error('You can only upload JPG/PNG files!');
+                setAvatarFileList([]);
+                return;
+            }
+            
+            // Validate file size
+            const isLt2M = file.size / 1024 / 1024 < 2;
+            if (!isLt2M) {
+                message.error('Image must be smaller than 2MB!');
+                setAvatarFileList([]);
+                return;
+            }
+
+            try {
+                setUploadingAvatar(true);
+                const formData = new FormData();
+                formData.append('file', file);
+                const uploadResponse = await UploadApiRequest.uploadImage(formData);
+                const imageUrl = uploadResponse.data;
+                
+                setUploadedAvatarUrl(imageUrl);
+                message.success('Avatar uploaded successfully');
+                
+                // Update file object with URL info
+                const newFileList = [...fileList];
+                newFileList[0].status = 'done';
+                newFileList[0].url = imageUrl;
+                setAvatarFileList(newFileList);
+
+                // Update user state with new avatar URL
+                setUser(prev => ({
+                    ...prev,
+                    imageUrl: imageUrl
+                }));
+
+                // Also update the user profile on the server
+                const updatedUser = {
+                    ...user,
+                    imageUrl: imageUrl
+                };
+                await authApiRequest.updateUser(updatedUser);
+                
+            } catch (error) {
+                console.error('Error uploading avatar:', error);
+                message.error('Failed to upload avatar: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+                
+                // Mark file as error
+                const newFileList = [...fileList];
+                newFileList[0].status = 'error';
+                setAvatarFileList(newFileList);
+            } finally {
+                setUploadingAvatar(false);
+            }
+        } else {
+            // If no file is selected, clear the uploaded URL
+            setUploadedAvatarUrl('');
+        }
+    };
+
+    // Function to remove avatar
+    const handleRemoveAvatar = async () => {
+        try {
+            setUploadingAvatar(true);
+            
+            // Update user with default avatar
+            const updatedUser = {
+                ...user,
+                imageUrl: "https://product.hstatic.net/1000280685/product/mmh00286_802f4da93114489f9e12fda7ae52f7c7_large.jpg" // Default avatar
+            };
+            
+            await authApiRequest.updateUser(updatedUser);
+            
+            // Update local state
+            setUser(prev => ({
+                ...prev,
+                imageUrl: updatedUser.imageUrl
+            }));
+            
+            setUploadedAvatarUrl('');
+            setAvatarFileList([]);
+            message.success('Avatar removed successfully');
+            
+        } catch (error) {
+            console.error('Error removing avatar:', error);
+            message.error('Failed to remove avatar');
+        } finally {
+            setUploadingAvatar(false);
+        }
     };
 
     useEffect(() => {
@@ -362,6 +470,85 @@ const UserProfile = () => {
                             </Form>
                     )
             },
+            {
+                key: '2',
+                label: 'Change Password',
+                children: (
+                        <Form
+                                layout="vertical"
+                                onFinish={(values) => {
+                                        setChangingPassword(true);
+                                        authApiRequest.changePassword({
+                                                currentPassword: values.currentPassword,
+                                                newPassword: values.newPassword,
+                                                confirmNewPassword: values.confirmNewPassword
+                                        })
+                                        .then(() => {
+                                                message.success('Password changed successfully');
+                                                form.resetFields(['currentPassword', 'newPassword', 'confirmNewPassword']);
+                                        })
+                                        .catch((error) => {
+                                                notification.error({ 
+                                                        message: 'Failed to change password', 
+                                                        description: error.response?.data?.message || 'An error occurred' 
+                                                });
+                                        })
+                                        .finally(() => {
+                                                setChangingPassword(false);
+                                        });
+                                }}
+                        >
+                                <Row>
+                                        <Col xs={24}>
+                                                <Form.Item
+                                                        name="currentPassword"
+                                                        label="Current Password"
+                                                        rules={[{ required: true, message: 'Please enter your current password' }]}
+                                                >
+                                                        <Input.Password prefix={<LockOutlined />} placeholder="Current Password" />
+                                                </Form.Item>
+                                        </Col>
+                                        <Col xs={24}>
+                                                <Form.Item
+                                                        name="newPassword"
+                                                        label="New Password"
+                                                        rules={[
+                                                                { required: true, message: 'Please enter your new password' },
+                                                                { min: 8, message: 'Password must be at least 8 characters' }
+                                                        ]}
+                                                >
+                                                        <Input.Password prefix={<LockOutlined />} placeholder="New Password" />
+                                                </Form.Item>
+                                        </Col>
+                                        <Col xs={24}>
+                                                <Form.Item
+                                                        name="confirmNewPassword"
+                                                        label="Confirm New Password"
+                                                        dependencies={['newPassword']}
+                                                        rules={[
+                                                                { required: true, message: 'Please confirm your new password' },
+                                                                ({ getFieldValue }) => ({
+                                                                        validator(_, value) {
+                                                                                if (!value || getFieldValue('newPassword') === value) {
+                                                                                        return Promise.resolve();
+                                                                                }
+                                                                                return Promise.reject(new Error('The passwords do not match'));
+                                                                        },
+                                                                }),
+                                                        ]}
+                                                >
+                                                        <Input.Password prefix={<LockOutlined />} placeholder="Confirm New Password" />
+                                                </Form.Item>
+                                        </Col>
+                                        <Col style={{ textAlign: 'right' }} xs={24}>
+                                                <Button type="primary" htmlType="submit" loading={changingPassword}>
+                                                        Update Password
+                                                </Button>
+                                        </Col>
+                                </Row>
+                        </Form>
+                )
+            }
             // Other tabs remain unchanged...
     ];
 
@@ -375,7 +562,46 @@ const UserProfile = () => {
                     </Breadcrumb>
 
                     <Flex vertical align="center" gap={16}>
-                            <Avatar size={100} src={user?.imageUrl || "https://product.hstatic.net/1000280685/product/mmh00286_802f4da93114489f9e12fda7ae52f7c7_large.jpg"} />
+                            <div className="avatar-preview">
+                                <Avatar 
+                                    size={100} 
+                                    src={uploadedAvatarUrl || user?.imageUrl || "https://product.hstatic.net/1000280685/product/mmh00286_802f4da93114489f9e12fda7ae52f7c7_large.jpg"} 
+                                />
+                                <Upload
+                                    name="avatar"
+                                    listType="picture"
+                                    className="avatar-uploader"
+                                    showUploadList={false}
+                                    fileList={avatarFileList}
+                                    beforeUpload={() => false} // Prevent default upload behavior
+                                    onChange={handleAvatarFileChange}
+                                    disabled={uploadingAvatar}
+                                    accept="image/png,image/jpeg"
+                                    maxCount={1}
+                                >
+                                    <Tooltip title={uploadingAvatar ? "Uploading..." : "Click to change avatar"}>
+                                        <div className="avatar-upload-button">
+                                            {uploadingAvatar ? <LoadingOutlined style={{ color: 'white' }} /> : <CameraOutlined style={{ color: 'white' }} />}
+                                        </div>
+                                    </Tooltip>
+                                </Upload>
+                            </div>
+                            {uploadedAvatarUrl && (
+                                <div style={{ color: 'green', fontSize: '12px', textAlign: 'center' }}>
+                                    Avatar updated successfully ✓
+                                </div>
+                            )}
+                            {(uploadedAvatarUrl || user?.imageUrl) && user?.imageUrl !== "https://product.hstatic.net/1000280685/product/mmh00286_802f4da93114489f9e12fda7ae52f7c7_large.jpg" && (
+                                <Button 
+                                    size="small" 
+                                    danger 
+                                    onClick={handleRemoveAvatar}
+                                    loading={uploadingAvatar}
+                                    style={{ fontSize: '11px' }}
+                                >
+                                    Remove Avatar
+                                </Button>
+                            )}
                             <Typography.Title level={2}>{user?.name || 'John Doe'}</Typography.Title>
                             <Typography.Text type="secondary">Member since {user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'N/A'}</Typography.Text>
                     </Flex>
@@ -389,3 +615,66 @@ const UserProfile = () => {
 };
 
 export default UserProfile;
+
+// Add CSS styles for avatar upload
+const avatarStyles = `
+.avatar-uploader {
+    position: absolute !important;
+    bottom: 0;
+    right: 0;
+}
+
+.avatar-uploader .ant-upload {
+    border: none !important;
+    background: transparent !important;
+}
+
+.avatar-uploader:hover .ant-upload {
+    background: transparent !important;
+}
+
+.avatar-preview {
+    position: relative;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.avatar-preview:hover {
+    transform: scale(1.05);
+}
+
+.avatar-upload-button {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(135deg, #faad14, #ffd53e);
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(250, 173, 20, 0.3);
+    transition: all 0.3s ease;
+}
+
+.avatar-upload-button:hover {
+    background: linear-gradient(135deg, #ffd53e, #faad14);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(250, 173, 20, 0.5);
+}
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+    const existingStyle = document.getElementById('avatar-upload-styles');
+    if (!existingStyle) {
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'avatar-upload-styles';
+        styleSheet.type = 'text/css';
+        styleSheet.innerText = avatarStyles;
+        document.head.appendChild(styleSheet);
+    }
+}

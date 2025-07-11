@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Upload, App, Tag, Tooltip, Image } from 'antd';
+import { Card, Table, Button, Space, Modal, Form, Input, InputNumber, Select, Upload, App, Tag, Tooltip, Image, Radio } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
 import { VariantApiRequest, AttributeApiRequest, UploadApiRequest } from '../../../api/ApiRequests';
+import { shapeGenerateApiRequest } from '../../../api/ApiRequests';
+import ModelPreview from '../../../components/ModelPreview';
+import ErrorBoundary from '../../../components/ErrorBoundary';
 
 const { Option } = Select;
 
@@ -12,6 +15,11 @@ const ProductVariants = ({ productId, attributes }) => {
     const [editingVariant, setEditingVariant] = useState(null);
     const [form] = Form.useForm();
     const [fileList, setFileList] = useState([]);
+    const [modelUrl, setModelUrl] = useState('');
+    const [modelPreviewUrl, setModelPreviewUrl] = useState('');
+    const [generating3DModel, setGenerating3DModel] = useState(false);
+    const [selectedImageForModel, setSelectedImageForModel] = useState(null);
+    const [uploadedImages, setUploadedImages] = useState([]);
     const { message } = App.useApp();
 
     useEffect(() => {
@@ -38,6 +46,8 @@ const ProductVariants = ({ productId, attributes }) => {
     const handleAddVariant = () => {
         setEditingVariant(null);
         setFileList([]);
+        setModelUrl('');
+        setModelPreviewUrl('');
         form.resetFields();
         
         // Set default values for attributes
@@ -60,7 +70,9 @@ const ProductVariants = ({ productId, attributes }) => {
 
     const handleEditVariant = (variant) => {
         setEditingVariant(variant);
-        
+        setModelUrl(variant.modelUrl || '');
+        setModelPreviewUrl(variant.modelUrl || '');
+        setSelectedImageForModel(0); // Select first image by default when editing
         // Prepare form values with variant attributes
         const formValues = {
             sku: variant.sku,
@@ -102,6 +114,118 @@ const ProductVariants = ({ productId, attributes }) => {
         } catch (error) {
             message.error('Failed to delete variant');
             console.error(error);
+        }
+    };
+
+    const handleFileChange = async ({ fileList }) => {
+        setFileList(fileList);
+        
+        // If all images are removed, reset states
+        if (fileList.length === 0) {
+            setModelUrl('');
+            setModelPreviewUrl('');
+            setSelectedImageForModel(null);
+            setUploadedImages([]);
+            return;
+        }
+
+        // Find new files that need to be uploaded
+        const newFiles = fileList.filter(file => file.originFileObj && !file.url);
+        
+        if (newFiles.length > 0) {
+            try {
+                setLoading(true);
+                const uploadPromises = newFiles.map(async (file) => {
+                    const formData = new FormData();
+                    formData.append('file', file.originFileObj);
+                    const response = await UploadApiRequest.uploadImage(formData);
+                    return {
+                        uid: file.uid,
+                        url: response.data
+                    };
+                });
+
+                const uploadedResults = await Promise.all(uploadPromises);
+                
+                // Update fileList with uploaded URLs
+                const updatedFileList = fileList.map(file => {
+                    const uploadedFile = uploadedResults.find(result => result.uid === file.uid);
+                    if (uploadedFile) {
+                        return {
+                            ...file,
+                            status: 'done',
+                            url: uploadedFile.url,
+                            isUploaded: true
+                        };
+                    }
+                    return file;
+                });
+
+                setFileList(updatedFileList);
+                setUploadedImages(prevImages => [...prevImages, ...uploadedResults]);
+                
+                // Select first image by default if none selected
+                if (selectedImageForModel === null) {
+                    setSelectedImageForModel(0);
+                }
+
+                message.success('Images uploaded successfully');
+            } catch (error) {
+                message.error('Failed to upload images');
+                console.error('Upload error:', error);
+                
+                // Update failed uploads in fileList
+                const updatedFileList = fileList.map(file => {
+                    if (file.originFileObj) {
+                        return {
+                            ...file,
+                            status: 'error'
+                        };
+                    }
+                    return file;
+                });
+                setFileList(updatedFileList);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    const handleGenerate3DModel = async () => {
+        if (!fileList.length || selectedImageForModel === null) {
+            message.error('Please select an image first');
+            return;
+        }
+
+        const selectedFile = fileList[selectedImageForModel];
+        if (!selectedFile.url) {
+            message.error('Please wait for the image to finish uploading');
+            return;
+        }
+
+        try {
+            setGenerating3DModel(true);
+            message.loading('Generating 3D model from image. This may take a minute...', 0);
+            
+            const response = await shapeGenerateApiRequest.generateShape({
+                caption: 'shape',
+                image_path: selectedFile.url, // Use the uploaded image URL
+            });
+            
+            if (response.data && response.data.storage_file_path) {
+                const shapeUrl = response.data.storage_file_path;
+                setModelUrl(shapeUrl);
+                setModelPreviewUrl(shapeUrl);
+                message.success('3D model generated successfully');
+            } else {
+                throw new Error('Failed to generate 3D model');
+            }
+        } catch (error) {
+            console.error('Error generating 3D model:', error);
+            message.error('Failed to generate 3D model: ' + (error.message || 'Unknown error'));
+        } finally {
+            setGenerating3DModel(false);
+            message.destroy();
         }
     };
 
@@ -148,7 +272,8 @@ const ProductVariants = ({ productId, attributes }) => {
                 isActive: true,
                 sku: values.sku || `SKU-${Date.now()}`,
                 productId,
-                variantAttributes
+                variantAttributes,
+                modelUrl: modelUrl || '',
             };
             
             if (editingVariant) {
@@ -170,10 +295,6 @@ const ProductVariants = ({ productId, attributes }) => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleFileChange = ({ fileList }) => {
-        setFileList(fileList);
     };
 
     const columns = [
@@ -264,6 +385,121 @@ const ProductVariants = ({ productId, attributes }) => {
                     form={form}
                     layout="vertical"
                 >
+                    <Form.Item>
+                        <div style={{ color: 'gray', marginBottom: 16 }}>
+                            <b>Note:</b> Images will be automatically uploaded when selected. After upload, you can generate a 3D model from any uploaded image.
+                        </div>
+                    </Form.Item>
+                    
+                    <Form.Item label="Images">
+                        <Upload
+                            listType="picture-card"
+                            fileList={fileList}
+                            onChange={handleFileChange}
+                            beforeUpload={() => false}
+                        >
+                            <div>
+                                <PlusOutlined />
+                                <div style={{ marginTop: 8 }}>Upload</div>
+                            </div>
+                        </Upload>
+                        {!fileList.length && (
+                            <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
+                                Please upload an image first to enable 3D model generation
+                            </div>
+                        )}
+                    </Form.Item>
+                    
+                    {fileList.length > 0 && (
+                        <Form.Item label="Select Image for 3D Model">
+                            <Radio.Group 
+                                value={selectedImageForModel}
+                                onChange={(e) => setSelectedImageForModel(e.target.value)}
+                                style={{ display: 'flex', gap: '16px' }}
+                            >
+                                {fileList.map((file, index) => (
+                                    <Radio 
+                                        key={index} 
+                                        value={index} 
+                                        style={{ display: 'flex', alignItems: 'center' }}
+                                        disabled={!file.url} // Disable if image is not uploaded yet
+                                    >
+                                        <div style={{ position: 'relative' }}>
+                                            <Image 
+                                                src={file.url || URL.createObjectURL(file.originFileObj)} 
+                                                alt={`Image ${index + 1}`}
+                                                style={{ 
+                                                    width: '60px', 
+                                                    height: '60px', 
+                                                    objectFit: 'cover', 
+                                                    marginLeft: '8px',
+                                                    opacity: file.url ? 1 : 0.5
+                                                }}
+                                                preview={false}
+                                            />
+                                            {!file.url && (
+                                                <div style={{ 
+                                                    position: 'absolute', 
+                                                    top: '50%', 
+                                                    left: '50%', 
+                                                    transform: 'translate(-50%, -50%)',
+                                                    color: '#999',
+                                                    fontSize: '12px'
+                                                }}>
+                                                    Uploading...
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Radio>
+                                ))}
+                            </Radio.Group>
+                            <div style={{ marginTop: 8, color: 'gray', fontStyle: 'italic' }}>
+                                {fileList.some(file => !file.url) ? 
+                                    'Please wait for images to finish uploading before generating 3D model' :
+                                    'Select an image to generate its 3D model'}
+                            </div>
+                        </Form.Item>
+                    )}
+                    
+                    <Form.Item label="3D Model">
+                        {modelPreviewUrl ? (
+                            <div>
+                                <div style={{ marginBottom: 16 }}>
+                                    <Button 
+                                        type="primary" 
+                                        onClick={handleGenerate3DModel}
+                                        loading={generating3DModel}
+                                        disabled={!fileList.length || selectedImageForModel === null}
+                                    >
+                                        Regenerate 3D Model
+                                    </Button>
+                                </div>
+                                <div style={{ height: 300, border: '1px solid #d9d9d9', borderRadius: 2, overflow: 'hidden' }}>
+                                    <ErrorBoundary>
+                                        <ModelPreview modelPath={modelPreviewUrl} />
+                                    </ErrorBoundary>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <Button 
+                                    type="primary" 
+                                    onClick={handleGenerate3DModel}
+                                    loading={generating3DModel}
+                                    disabled={!fileList.length || selectedImageForModel === null}
+                                >
+                                    Generate 3D Model from Selected Image
+                                </Button>
+                                <p style={{ marginTop: 8, color: fileList.length ? 'gray' : '#ff4d4f', fontStyle: 'italic' }}>
+                                    {!fileList.length ? 
+                                        'Please upload at least one image before generating a 3D model' :
+                                        selectedImageForModel === null ?
+                                        'Please select an image to generate the 3D model' :
+                                        'Our AI will automatically generate a 3D model based on your selected image'}
+                                </p>
+                            </div>
+                        )}
+                    </Form.Item>
                     <Form.Item
                         name="sku"
                         label="SKU"
@@ -286,24 +522,10 @@ const ProductVariants = ({ productId, attributes }) => {
                         />
                     </Form.Item>
                     
-                    <Form.Item label="Images">
-                        <Upload
-                            listType="picture-card"
-                            fileList={fileList}
-                            onChange={handleFileChange}
-                            beforeUpload={() => false}
-                        >
-                            <div>
-                                <PlusOutlined />
-                                <div style={{ marginTop: 8 }}>Upload</div>
-                            </div>
-                        </Upload>
-                    </Form.Item>
-                    
                     {attributes.map(attr => {
                         const attributeValues = attr.attributeValues?.$values || [];
                         // Get the first attribute value as default if available
-                        const defaultValue = editingVariant?.variantAttributes?.$values[0].attributeValue.id;
+                        const defaultValue = editingVariant?.variantAttributes?.$values[0]?.attributeValue?.id;
                     
                         return (
                             <Form.Item

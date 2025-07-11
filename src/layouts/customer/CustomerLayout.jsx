@@ -81,7 +81,7 @@ const CustomerLayout = ({ children }) => {
                                             onClick={() => navigate(URLS.CUSTOMER.PROFILE)}
                                             style={{ cursor: 'pointer' }}
                                         >
-                                            <Avatar src={user.imageUrl} />
+                                            <Avatar src={user?.imageUrl} />
                                             <Typography.Text>{user.unique_name}</Typography.Text>
                                         </Flex>
                                     </Flex>
@@ -123,7 +123,7 @@ const CustomerLayout = ({ children }) => {
                                     onClick={() => navigate(URLS.CUSTOMER.PROFILE)}
                                     style={{ cursor: 'pointer' }}
                                 >
-                                    <Avatar src={user.certthumbprint} />
+                                    <Avatar src={user?.imageUrl} />
                                     <Typography.Text>{user.unique_name}</Typography.Text>
                                 </Flex>
                             </Flex>
@@ -157,7 +157,7 @@ const CustomerLayout = ({ children }) => {
                 />
                 
                 {/* Chatbot Component */}
-                {/* <div style={{
+                <div style={{
                     position: 'fixed',
                     right: '20px',
                     bottom: '80px',
@@ -166,7 +166,7 @@ const CustomerLayout = ({ children }) => {
                     transition: 'all 0.3s'
                 }}>
                     <Chatbot />
-                </div> */}
+                </div>
             </Content>
 
             <Footer style={{ 

@@ -19,6 +19,39 @@ const Chatbot = () => {
     const reconnectAttempts = useRef(0);
     const MAX_RECONNECT_ATTEMPTS = 5;
 
+    // Add CSS for hiding scrollbar in WebKit browsers and welcome animation
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            .chatbot-messages-container::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .chatbot-welcome {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .chatbot-sample-question {
+                transition: all 0.2s ease;
+            }
+            
+            .chatbot-sample-question:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+        `;
+        document.head.appendChild(style);
+        
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
+
     // Initialize WebSocket connection
     useEffect(() => {
         const connectWebSocket = () => {
@@ -141,13 +174,19 @@ const Chatbot = () => {
         <Card
             title={
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Title level={4} style={{ margin: 0 }}>Chat Assistant</Title>
-                    <Badge status={getStatusColor()} />
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <RobotOutlined style={{ marginRight: '8px', color: '#52c41a' }} />
+                        <Title level={4} style={{ margin: 0 }}>Dear Home Assistant</Title>
+                    </div>
+                    <Badge 
+                        status={getStatusColor()} 
+                        text={screens.md ? (status === 'connected' ? 'Online' : status === 'connecting' ? 'Connecting' : 'Offline') : ''} 
+                    />
                 </div>
             }
             style={{ 
-                width: screens.md ? 400 : '100%',
-                height: screens.md ? 600 : '100vh',
+                width: screens.md ? (screens.lg ? '450px' : '400px') : '100%',
+                height: screens.md ? (screens.lg ? '650px' : '600px') : '100vh',
                 maxWidth: '100%',
                 position: screens.md ? 'relative' : 'fixed',
                 top: screens.md ? 'auto' : 0,
@@ -155,23 +194,80 @@ const Chatbot = () => {
                 right: screens.md ? 'auto' : 0,
                 bottom: screens.md ? 'auto' : 0,
                 margin: screens.md ? 0 : '0 auto',
-                borderRadius: screens.md ? '8px' : 0,
+                borderRadius: screens.md ? '12px' : 0,
+                boxShadow: screens.md ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none',
+                zIndex: 1000
             }}
             bodyStyle={{ 
                 display: 'flex', 
                 flexDirection: 'column', 
                 height: screens.md ? 'calc(100% - 57px)' : 'calc(100vh - 57px)', 
-                padding: screens.md ? '12px' : '8px',
+                padding: screens.md ? '16px' : '12px',
             }}
         >
-            <div style={{ 
-                flex: 1, 
-                overflowY: 'auto', 
-                marginBottom: screens.md ? '12px' : '8px',
-                padding: screens.md ? 0 : '0 4px'
-            }}>
+            <div 
+                className="chatbot-messages-container"
+                style={{ 
+                    flex: 1, 
+                    overflowY: 'auto', 
+                    marginBottom: screens.md ? '12px' : '8px',
+                    padding: screens.md ? 0 : '0 4px',
+                    msOverflowStyle: 'none', // Hide scrollbar for IE and Edge
+                    scrollbarWidth: 'none' // Hide scrollbar for Firefox
+                }}
+            >
                 {messages.length === 0 ? (
-                    <Empty description="No messages yet. Start a conversation!" />
+                    <div className="chatbot-welcome">
+                        <Empty 
+                            description={
+                                <div>
+                                    <Text strong>Welcome to Dear Home Assistant!</Text>
+                                    <p>Choose a sample question or type your own:</p>
+                                </div>
+                            } 
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        />
+                        <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            gap: '8px',
+                            margin: '16px 0',
+                            maxWidth: screens.md ? '400px' : '100%'
+                        }}>
+                            {[
+                                "What furniture would look good in my living room?",
+                                "What's the return policy for products?",
+                                "Can you suggest home decor ideas for a small space?"
+                            ].map((question, index) => (
+                                <Button 
+                                    key={index}
+                                    type="default"
+                                    className="chatbot-sample-question"
+                                    style={{ 
+                                        borderRadius: '18px', 
+                                        textAlign: 'left',
+                                        backgroundColor: '#f0f2f5',
+                                        border: 'none',
+                                        padding: '8px 16px',
+                                        height: 'auto',
+                                        whiteSpace: 'normal'
+                                    }}
+                                    disabled={status !== 'connected'}
+                                    onClick={() => {
+                                        setInputMessage(question);
+                                        setTimeout(() => {
+                                            const event = { preventDefault: () => {} };
+                                            setInputMessage(question);
+                                            sendMessage(event);
+                                        }, 100);
+                                    }}
+                                >
+                                    <MessageOutlined style={{ marginRight: '8px' }} />
+                                    {question}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
                 ) : (
                     <>
                         <List
@@ -200,13 +296,16 @@ const Chatbot = () => {
                                                 margin: message.sender === 'user' ? '0 0 0 8px' : '0 8px 0 0'
                                             }}
                                         />
-                                        <div
+                                <div
                                             style={{
                                                 backgroundColor: message.sender === 'user' ? '#1890ff' : '#f0f2f5',
                                                 color: message.sender === 'user' ? 'white' : 'rgba(0, 0, 0, 0.85)',
-                                                padding: screens.md ? '12px' : '8px',
-                                                borderRadius: screens.md ? '12px' : '8px',
-                                                fontSize: screens.md ? 'inherit' : '14px'
+                                                padding: screens.md ? '12px 16px' : '10px 14px',
+                                                borderRadius: message.sender === 'user' 
+                                                    ? '18px 18px 4px 18px' 
+                                                    : '18px 18px 18px 4px',
+                                                fontSize: screens.md ? '15px' : '14px',
+                                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
                                             }}
                                         >
                                             {message.sender === 'user' ? (
@@ -257,9 +356,15 @@ const Chatbot = () => {
                                     <div
                                         style={{
                                             backgroundColor: '#f0f2f5',
-                                            padding: screens.md ? '12px' : '8px',
-                                            borderRadius: screens.md ? '12px' : '8px',
-                                            fontSize: screens.md ? 'inherit' : '14px'
+                                            padding: screens.md ? '12px 16px' : '10px 14px',
+                                            borderRadius: '18px 18px 18px 4px',
+                                            fontSize: screens.md ? '15px' : '14px',
+                                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                                            minWidth: '60px',
+                                            minHeight: '40px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
                                         }}
                                     >
                                         <Spin size="small" />
@@ -273,32 +378,54 @@ const Chatbot = () => {
             </div>
             
             <div style={{ 
-                padding: screens.md ? 0 : '8px',
-                borderTop: screens.md ? 'none' : '1px solid #f0f0f0',
-                backgroundColor: screens.md ? 'transparent' : '#fff'
+                padding: screens.md ? '8px 0 0 0' : '8px',
+                borderTop: '1px solid #f0f0f0',
+                backgroundColor: '#fff',
+                borderRadius: '0 0 12px 12px'
             }}>
                 <form onSubmit={sendMessage} style={{ display: 'flex' }}>
                     <Input
-                        size={screens.md ? 'middle' : 'large'}
+                        size={screens.md ? 'large' : 'large'}
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         placeholder="Type your message..."
                         disabled={status !== 'connected'}
-                        style={{ marginRight: '8px' }}
+                        style={{ 
+                            marginRight: '8px',
+                            borderRadius: '20px',
+                            padding: '8px 16px'
+                        }}
+                        suffix={
+                            status === 'connected' && inputMessage.trim() ? (
+                                <SendOutlined 
+                                    style={{ color: '#1890ff', cursor: 'pointer' }}
+                                    onClick={sendMessage}
+                                />
+                            ) : null
+                        }
                     />
                     <Button 
                         type="primary" 
                         icon={<SendOutlined />} 
                         htmlType="submit"
-                        size={screens.md ? 'middle' : 'large'}
+                        size="large"
+                        shape="circle"
                         disabled={status !== 'connected' || !inputMessage.trim()}
                     />
                 </form>
             </div>
             
             {status !== 'connected' && (
-                <div style={{ textAlign: 'center', padding: '8px', marginTop: '8px', color: 'rgba(0, 0, 0, 0.45)' }}>
-                    {status === 'disconnected' ? 'Connecting to server...' : 'Connection error. Retrying...'}
+                <div style={{ 
+                    textAlign: 'center', 
+                    padding: '12px', 
+                    marginTop: '8px', 
+                    color: status === 'error' ? '#f5222d' : 'rgba(0, 0, 0, 0.45)',
+                    backgroundColor: status === 'error' ? '#fff1f0' : '#f9f9f9',
+                    borderRadius: '8px',
+                    fontSize: '14px'
+                }}>
+                    {errorMessage || (status === 'disconnected' ? 'Connecting to server...' : 'Connection error. Retrying...')}
                 </div>
             )}
         </Card>

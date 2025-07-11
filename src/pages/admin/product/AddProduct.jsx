@@ -16,10 +16,7 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [fileList, setFileList] = useState([]);
     const [uploadedImageUrl, setUploadedImageUrl] = useState('');
-    const [modelPreviewUrl, setModelPreviewUrl] = useState(null);
-    const [modelUrl, setModelUrl] = useState('');
     const [loading, setLoading] = useState(false);
-    const [generating3DModel, setGenerating3DModel] = useState(false);
 
     useEffect(() => {
         fetchCategories();
@@ -116,7 +113,6 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
 
             const productData = {
                 imageUrl,
-                modelUrl: modelUrl, // Use the generated model URL
                 name: values.name,
                 price: values.price,
                 description: values.description,
@@ -134,15 +130,6 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                     form.resetFields();
                     setFileList([]);
                     setUploadedImageUrl('');
-                    if (modelPreviewUrl) {
-                        // Only revoke object URLs, not Firebase URLs
-                        if (modelPreviewUrl.startsWith('blob:')) {
-                            URL.revokeObjectURL(modelPreviewUrl);
-                        }
-                        setModelPreviewUrl(null);
-                    }
-                    setModelUrl('');
-                    setSelectedCategory(null);
                 },
                 (error) => {
                     message.error('Failed to create product');
@@ -204,44 +191,6 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
         return category?.attributes?.$values || [];
     };
 
-    // Generate 3D model from image
-    const handleGenerate3DModel = async () => {
-        if (!uploadedImageUrl) {
-            message.error('Please upload an image first');
-            return;
-        }
-
-        try {
-            setGenerating3DModel(true);
-            message.loading('Generating 3D model from image. This may take a minute...', 0);
-
-            // Call the shape generation API with the image URL
-            const response = await shapeGenerateApiRequest.generateShape({
-                caption: 'shape',
-                image_path: uploadedImageUrl,
-            });
-
-            if (response.data && response.data.storage_file_path) {
-                // Get the shape URL from the response
-                const shapeUrl = response.data.storage_file_path;
-                setModelUrl(shapeUrl);
-                setModelPreviewUrl(shapeUrl);
-                message.success('3D model generated successfully');
-                
-                // Update the form values
-                form.setFieldsValue({ modelUrl: shapeUrl });
-            } else {
-                throw new Error('Failed to generate 3D model');
-            }
-        } catch (error) {
-            console.error('Error generating 3D model:', error);
-            message.error('Failed to generate 3D model: ' + (error.message || 'Unknown error'));
-        } finally {
-            setGenerating3DModel(false);
-            message.destroy(); // Clear the loading message
-        }
-    };
-
     return (
         <Modal
             open={open}
@@ -279,46 +228,11 @@ const AddProduct = ({ open, onCancel, onSubmit }) => {
                     )}
                 </Form.Item>
 
-                {uploadedImageUrl && (
-                    <Form.Item
-                        name="3dModel"
-                        label="3D Model"
-                    >
-                        {modelPreviewUrl ? (
-                            <div>
-                                <div style={{ marginBottom: 16 }}>
-                                    <Button 
-                                        type="primary" 
-                                        onClick={handleGenerate3DModel}
-                                        loading={generating3DModel}
-                                        icon={<CloudUploadOutlined />}
-                                    >
-                                        Regenerate 3D Model
-                                    </Button>
-                                </div>
-                                <div style={{ height: 300, border: '1px solid #d9d9d9', borderRadius: 2, overflow: 'hidden' }}>
-                                    <ErrorBoundary>
-                                        <ModelPreview modelPath={modelPreviewUrl} />
-                                    </ErrorBoundary>
-                                </div>
+                <Form.Item>
+                    <div style={{ color: 'gray', marginBottom: 16 }}>
+                        <b>Note:</b> 3D models are now managed per variant. Please add variants and assign 3D models after creating the product.
                             </div>
-                        ) : (
-                            <div>
-                                <Button 
-                                    type="primary" 
-                                    onClick={handleGenerate3DModel}
-                                    loading={generating3DModel}
-                                    icon={<CloudUploadOutlined />}
-                                >
-                                    Generate 3D Model from Image
-                                </Button>
-                                <p style={{ marginTop: 8, color: 'gray', fontStyle: 'italic' }}>
-                                    Our AI will automatically generate a 3D model based on your product image
-                                </p>
-                            </div>
-                        )}
                     </Form.Item>
-                )}
 
                 <Form.Item
                     name="name"
